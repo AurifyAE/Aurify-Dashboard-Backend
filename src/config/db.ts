@@ -7,6 +7,7 @@ const connectDB = async (): Promise<void> => {
       "MONGO_URI is not defined or invalid. Add MONGO_URI=mongodb://localhost:27017/aurify to your .env file."
     );
   }
+  
   try {
     const opts: mongoose.ConnectOptions = {
       maxPoolSize: 10,
