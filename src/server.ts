@@ -22,4 +22,4 @@ const startServer = async () => {
     }
 };
 
-startServer(); // restarted with permissive development CORS
+startServer();

@@ -3,6 +3,7 @@ import authRoutes from "./auth.routes";
 import commodityRoutes from "./commodity.routes";
 import spotrateRoutes from "./spotrate.routes";
 import templateRoutes from "./templates.routes";
+import marketplaceRoutes from "./marketplace.routes";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/auth", authRoutes);
 router.use("/commodities", commodityRoutes);
 router.use("/spotrate", spotrateRoutes);
 router.use("/templates", templateRoutes);
+router.use("/marketplace", marketplaceRoutes);
 
 export default router;
