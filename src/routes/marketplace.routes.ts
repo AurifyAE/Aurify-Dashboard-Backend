@@ -17,6 +17,7 @@ import {
   upsertMerchantCommodity,
   deleteMerchantCommodity,
   upsertNews,
+  listAllLiveScreens,
 } from "../controllers/marketplace.controller";
 import { protect, requireRole } from "../middlewares/auth.middleware";
 
@@ -26,6 +27,8 @@ router.get("/live/:merchantSlug", getLiveScreen);
 router.get("/live/:merchantSlug/:screenSlug", getLiveScreen);
 
 router.use(protect);
+
+router.get("/screens/all", listAllLiveScreens);
 
 router.get("/merchant/me", getMyMerchant);
 router.post("/merchant/register", registerMerchant);

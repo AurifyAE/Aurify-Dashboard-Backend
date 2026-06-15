@@ -10,6 +10,7 @@ import MerchantCommodity from "../models/MerchantCommodity";
 import MerchantNews from "../models/MerchantNews";
 import { PublishedLayoutVersion, ScreenRecord } from "../models/PublishedScreen";
 import SpotRateSettings from "../models/SpotRateSettings";
+import SpotRate from "../models/SpotRate";
 
 const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL || "https://screen.aurify.ae";
 
@@ -555,6 +556,7 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
       MerchantNews.find({ merchantId: merchant.merchantId, active: true }).sort({ priority: -1 }).lean(),
       SpotRateSettings.findOne({ userId: merchant.userId }).lean(),
     ]);
+
     res.status(200).json({
       success: true,
       data: { merchant, profile, screen, theme, layout, commodities, news, spotRateSettings },
@@ -562,5 +564,33 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
   } catch (err) {
     console.error("getLiveScreen:", err);
     res.status(500).json({ success: false, message: "Failed to fetch live screen" });
+  }
+};
+
+export const listAllLiveScreens = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const screens = await ScreenRecord.find({ live: true }).lean();
+    const merchantIds = screens.map((s) => s.merchantId);
+    const merchants = await Merchant.find({ merchantId: { $in: merchantIds } }).lean();
+    const merchantMap = new Map(merchants.map((m) => [m.merchantId, m]));
+
+    const data = screens.map((s) => {
+      const merchant = merchantMap.get(s.merchantId);
+      return {
+        _id: s._id,
+        merchantId: s.merchantId,
+        screenSlug: s.screenSlug,
+        layoutId: s.layoutId,
+        liveUrl: s.liveUrl,
+        companyName: merchant?.companyName || "Unknown Merchant",
+        logo: merchant?.logo || "",
+        slug: merchant?.slug || "",
+      };
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    console.error("listAllLiveScreens:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch live screens" });
   }
 };
