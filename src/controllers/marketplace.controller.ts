@@ -463,6 +463,27 @@ export const upsertMerchantCommodity = async (req: AuthRequest, res: Response) =
   }
 };
 
+export const deleteMerchantCommodity = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchant = await getUserMerchant(req);
+    if (!merchant) {
+      res.status(404).json({ success: false, message: "Register merchant first" });
+      return;
+    }
+    const id = req.params.id;
+    const result = await MerchantCommodity.deleteOne({ _id: id, merchantId: merchant.merchantId });
+    if (result.deletedCount === 0) {
+      res.status(404).json({ success: false, message: "Commodity not found" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Commodity deleted successfully" });
+  } catch (err) {
+    console.error("deleteMerchantCommodity:", err);
+    res.status(500).json({ success: false, message: "Failed to delete commodity" });
+  }
+};
+
+
 export const listNews = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);

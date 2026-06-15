@@ -1,6 +1,5 @@
 import { Router } from "express";
 import authRoutes from "./auth.routes";
-import commodityRoutes from "./commodity.routes";
 import spotrateRoutes from "./spotrate.routes";
 import templateRoutes from "./templates.routes";
 import marketplaceRoutes from "./marketplace.routes";
@@ -12,7 +11,6 @@ router.get("/health", (req, res) => {
 });
 
 router.use("/auth", authRoutes);
-router.use("/commodities", commodityRoutes);
 router.use("/spotrate", spotrateRoutes);
 router.use("/templates", templateRoutes);
 router.use("/marketplace", marketplaceRoutes);

@@ -15,6 +15,7 @@ import {
   saveLayout,
   updateProfile,
   upsertMerchantCommodity,
+  deleteMerchantCommodity,
   upsertNews,
 } from "../controllers/marketplace.controller";
 import { protect, requireRole } from "../middlewares/auth.middleware";
@@ -44,6 +45,7 @@ router.post("/layouts/:layoutId/publish", publishLayout);
 router.get("/merchant-commodities", listMerchantCommodities);
 router.post("/merchant-commodities", upsertMerchantCommodity);
 router.patch("/merchant-commodities/:id", upsertMerchantCommodity);
+router.delete("/merchant-commodities/:id", deleteMerchantCommodity);
 
 router.get("/news", listNews);
 router.post("/news", upsertNews);
