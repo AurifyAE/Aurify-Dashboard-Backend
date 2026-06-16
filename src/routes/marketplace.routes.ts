@@ -13,6 +13,7 @@ import {
   publishLayout,
   registerMerchant,
   saveLayout,
+  deleteLayout,
   updateProfile,
   upsertMerchantCommodity,
   deleteMerchantCommodity,
@@ -43,6 +44,7 @@ router.post("/themes/:themeId/install", installTheme);
 
 router.get("/layouts", listLayouts);
 router.put("/layouts", saveLayout);
+router.delete("/layouts/:layoutId", deleteLayout);
 router.post("/layouts/:layoutId/publish", publishLayout);
 
 router.get("/merchant-commodities", listMerchantCommodities);

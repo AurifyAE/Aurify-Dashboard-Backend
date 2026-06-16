@@ -102,7 +102,13 @@ const ensureMarketplaceThemes = async () => {
 export const getMyMerchant = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
-    res.status(200).json({ success: true, data: merchant });
+    if (!merchant) {
+      res.status(200).json({ success: true, data: null });
+      return;
+    }
+    const spotRateDoc = await SpotRate.findOne({ createdBy: merchant.userId }).lean();
+    const merchantData = { ...merchant.toObject(), commodities: spotRateDoc?.commodities || [] };
+    res.status(200).json({ success: true, data: merchantData });
   } catch (err) {
     console.error("getMyMerchant:", err);
     res.status(500).json({ success: false, message: "Failed to fetch merchant" });
@@ -348,6 +354,32 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const deleteLayout = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchant = await getUserMerchant(req);
+    if (!merchant) {
+      res.status(404).json({ success: false, message: "Register merchant first" });
+      return;
+    }
+    const { layoutId } = req.params;
+    
+    // Delete from ScreenLayout
+    await ScreenLayout.deleteOne({ layoutId, merchantId: merchant.merchantId });
+    
+    // Also remove from PublishedScreens and un-live the ScreenRecord if applicable
+    await PublishedLayoutVersion.deleteMany({ layoutId, merchantId: merchant.merchantId });
+    await ScreenRecord.updateMany(
+      { layoutId, merchantId: merchant.merchantId },
+      { $set: { live: false, layoutId: null, themeId: null, liveUrl: null } }
+    );
+
+    res.status(200).json({ success: true, message: "Layout deleted successfully" });
+  } catch (err) {
+    console.error("deleteLayout:", err);
+    res.status(500).json({ success: false, message: "Failed to delete layout" });
+  }
+};
+
 export const publishLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
@@ -548,14 +580,16 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
       res.status(404).json({ success: false, message: "Live screen not found" });
       return;
     }
-    const [layout, theme, profile, commodities, news, spotRateSettings] = await Promise.all([
+    const [layout, theme, profile, spotRateDoc, news, spotRateSettings] = await Promise.all([
       ScreenLayout.findOne({ merchantId: merchant.merchantId, layoutId: screen.layoutId }).lean(),
       MerchantTheme.findOne({ merchantId: merchant.merchantId, themeId: screen.themeId }).lean(),
       MerchantProfile.findOne({ merchantId: merchant.merchantId }).lean(),
-      MerchantCommodity.find({ merchantId: merchant.merchantId, active: true }).sort({ createdAt: -1 }).lean(),
+      SpotRate.findOne({ createdBy: merchant.userId }).lean(),
       MerchantNews.find({ merchantId: merchant.merchantId, active: true }).sort({ priority: -1 }).lean(),
       SpotRateSettings.findOne({ userId: merchant.userId }).lean(),
     ]);
+
+    const commodities = spotRateDoc?.commodities || [];
 
     res.status(200).json({
       success: true,
