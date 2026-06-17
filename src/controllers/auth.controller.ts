@@ -2,6 +2,17 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
+import Merchant from "../models/Merchant";
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const merchantIdFromUser = (userId: string) => `m_${userId}`;
 
 const signToken = (payload: object): string => {
   const secret = process.env.JWT_SECRET as string;
@@ -16,7 +27,7 @@ export const register = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { companyName, email, phone, password, confirmPassword } = req.body;
+    const { companyName, email, phone, password, confirmPassword, logo, services } = req.body;
 
     // --- Validation ---
     const errors: Record<string, string> = {};
@@ -61,6 +72,34 @@ export const register = async (
       status: "active",
     });
 
+    // --- Generate slug and merchantId ---
+    const baseSlug = slugify(companyName || email);
+    let slug = baseSlug || `merchant-${Date.now()}`;
+    let suffix = 1;
+    while (await Merchant.exists({ slug })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+
+    // --- Create merchant profile immediately ---
+    await Merchant.create({
+      merchantId: merchantIdFromUser(user._id.toString()),
+      userId: user._id.toString(),
+      companyName: companyName.trim(),
+      slug,
+      email: email.toLowerCase().trim(),
+      phone: phone?.trim(),
+      status: "Pending", // Default status, requires admin approval
+      services: {
+        tvDisplay: services?.tvDisplay || false,
+        website: services?.website || false,
+        mobileApp: services?.mobileApp || false,
+      },
+      logo: logo || undefined, // Store base64 image if provided
+      maxScreens: 1, // Default limit
+      maxDevices: 1, // Default limit
+      serviceEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Default 1 year
+    });
+
     // --- Issue JWT ---
     const token = signToken({
       id: user._id,
@@ -98,8 +137,8 @@ export const login = async (
 
     // --- Validation ---
     const errors: Record<string, string> = {};
-    if (!email?.trim()) errors.email = "Email is required";
-    else if (!/^\S+@\S+\.\S+$/.test(email))
+    if (!email?.trim()) errors.email = "Email/Username is required";
+    else if (email.trim().toLowerCase() !== "admin" && !/^\S+@\S+\.\S+$/.test(email))
       errors.email = "Invalid email format";
     if (!password) errors.password = "Password is required";
 

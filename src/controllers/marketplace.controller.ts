@@ -71,26 +71,8 @@ const getUserMerchant = async (req: AuthRequest) => {
 const ensureUserMerchant = async (req: AuthRequest) => {
   if (!req.user?.id) throw new Error("Unauthorized");
   const existing = await Merchant.findOne({ userId: req.user.id });
-  if (existing) return existing;
-
-  const baseSlug = slugify(req.user.companyName || req.user.email);
-  let slug = baseSlug || `merchant-${Date.now()}`;
-  let suffix = 1;
-  while (await Merchant.exists({ slug })) {
-    slug = `${baseSlug}-${suffix++}`;
-  }
-
-  const merchant = await Merchant.create({
-    merchantId: merchantIdFromUser(req.user.id),
-    userId: req.user.id,
-    companyName: req.user.companyName,
-    slug,
-    email: req.user.email,
-    status: "Pending",
-    services: { tvDisplay: true, mobileApp: false, website: false },
-  });
-  await MerchantProfile.create({ merchantId: merchant.merchantId });
-  return merchant;
+  if (!existing) throw new Error("Merchant profile not found. Please contact support.");
+  return existing;
 };
 
 const ensureMarketplaceThemes = async () => {
@@ -315,7 +297,8 @@ export const listLayouts = async (req: AuthRequest, res: Response) => {
       return;
     }
     const layouts = await ScreenLayout.find({ merchantId: merchant.merchantId }).sort({ updatedAt: -1 }).lean();
-    res.status(200).json({ success: true, data: layouts });
+    const layoutsWithSlug = layouts.map(l => ({ ...l, merchantSlug: merchant.slug }));
+    res.status(200).json({ success: true, data: layoutsWithSlug });
   } catch (err) {
     console.error("listLayouts:", err);
     res.status(500).json({ success: false, message: "Failed to fetch layouts" });
@@ -325,6 +308,19 @@ export const listLayouts = async (req: AuthRequest, res: Response) => {
 export const saveLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
+    
+    // Check screen limits if this is a new layout
+    if (!req.body.layoutId) {
+      const currentScreensCount = await ScreenLayout.countDocuments({ merchantId: merchant.merchantId });
+      if (currentScreensCount >= (merchant.maxScreens || 1)) {
+        res.status(403).json({ 
+          success: false, 
+          message: `Screen limit reached. Your plan allows up to ${merchant.maxScreens || 1} screen(s). Please upgrade to add more.` 
+        });
+        return;
+      }
+    }
+
     const layoutId = req.body.layoutId || `layout_${new mongoose.Types.ObjectId().toString()}`;
     const screenSlug = slugify(req.body.screenSlug || "main") || "main";
     const layout = await ScreenLayout.findOneAndUpdate(

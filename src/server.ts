@@ -2,6 +2,9 @@ import app from "./app";
 import dotenv from "dotenv";
 import connectDB from "./config/db";
 import dns from 'node:dns';
+import http from "http";
+import { Server } from "socket.io";
+import { setupScreenTracker } from "./sockets/screenTracker.socket";
 
 dotenv.config();
 
@@ -12,8 +15,19 @@ const startServer = async () => {
         dns.setServers(['8.8.8.8', '1.1.1.1']);
         await connectDB();
 
+        const server = http.createServer(app);
+        
+        const io = new Server(server, {
+            cors: {
+                origin: "*", // Adjust depending on frontend URL
+                methods: ["GET", "POST"]
+            }
+        });
+
+        setupScreenTracker(io);
+
         // Start Express Server
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
         });
     } catch (error) {

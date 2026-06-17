@@ -22,6 +22,8 @@ export interface IMerchant extends Document {
     mobileApp: boolean;
     website: boolean;
   };
+  additionalFeatures: string[];
+  allowedCommodities: string[];
   branding: {
     primaryColor: string;
     secondaryColor: string;
@@ -38,6 +40,9 @@ export interface IMerchant extends Document {
     showLondonFix: boolean;
   };
   packageId?: string;
+  maxScreens: number;
+  maxDevices: number;
+  serviceEndDate: Date;
 }
 
 const MerchantSchema = new Schema<IMerchant>(
@@ -75,10 +80,12 @@ const MerchantSchema = new Schema<IMerchant>(
       index: true,
     },
     services: {
-      tvDisplay: { type: Boolean, default: true },
+      tvDisplay: { type: Boolean, default: false },
       mobileApp: { type: Boolean, default: false },
       website: { type: Boolean, default: false },
     },
+    additionalFeatures: { type: [String], default: [] },
+    allowedCommodities: { type: [String], default: [] },
     branding: {
       primaryColor: { type: String, default: "#d4a017" },
       secondaryColor: { type: String, default: "#111827" },
@@ -95,6 +102,16 @@ const MerchantSchema = new Schema<IMerchant>(
       showLondonFix: { type: Boolean, default: false },
     },
     packageId: { type: String, trim: true },
+    maxScreens: { type: Number, default: 1 },
+    maxDevices: { type: Number, default: 1 },
+    serviceEndDate: { 
+      type: Date, 
+      default: () => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() + 1);
+        return d;
+      }
+    },
   },
   { timestamps: true }
 );
