@@ -392,15 +392,11 @@ export const publishLayout = async (req: AuthRequest, res: Response) => {
       res.status(404).json({ success: false, message: "Layout not found" });
       return;
     }
-    if (!layout.themeId) {
-      res.status(400).json({ success: false, message: "Theme Selected validation failed" });
+    if (!layout.themeId && !layout.header?.layout) {
+      res.status(400).json({ success: false, message: "Theme or layout selected validation failed" });
       return;
     }
-    const installedTheme = await MerchantTheme.findOne({ merchantId: merchant.merchantId, themeId: layout.themeId }).lean();
-    if (!installedTheme) {
-      res.status(400).json({ success: false, message: "Selected theme is not installed" });
-      return;
-    }
+    
     const latest = await PublishedLayoutVersion.findOne({
       merchantId: merchant.merchantId,
       layoutId: layout.layoutId,
