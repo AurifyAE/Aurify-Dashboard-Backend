@@ -220,3 +220,80 @@ export const getMe = async (
     next(err);
   }
 };
+
+// ─── UPDATE PROFILE ──────────────────────────────────────────────────────────
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const authReq = req as Request & { user?: { id: string } };
+    const { companyName, phone, currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(authReq.user?.id);
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    if (companyName) user.companyName = companyName;
+    if (phone) user.phone = phone;
+
+    if (newPassword) {
+      if (!currentPassword) {
+        res.status(400).json({ success: false, message: "Current password is required to set a new password" });
+        return;
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        res.status(401).json({ success: false, message: "Incorrect current password" });
+        return;
+      }
+      if (newPassword.length < 8) {
+        res.status(400).json({ success: false, message: "New password must be at least 8 characters" });
+        return;
+      }
+      user.passwordHash = await bcrypt.hash(newPassword, 12);
+    }
+
+    await user.save();
+
+    // Optionally update the linked Merchant profile's company name & phone
+    if (companyName || phone) {
+      await Merchant.findOneAndUpdate(
+        { userId: user._id.toString() },
+        { 
+          $set: { 
+            ...(companyName && { companyName }), 
+            ...(phone && { phone }) 
+          } 
+        }
+      );
+    }
+
+    // Re-issue token in case companyName changed
+    const token = signToken({
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      companyName: user.companyName,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      token,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};

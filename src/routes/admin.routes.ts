@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMerchants, updateMerchant, deleteMerchant } from "../controllers/admin.controller";
+import { getMerchants, updateMerchant, deleteMerchant, adminResetPassword } from "../controllers/admin.controller";
 import { protect, requireRole } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -11,5 +11,6 @@ router.use(protect, requireRole("super_admin", "admin"));
 router.get("/users", getMerchants);
 router.patch("/users/:id", updateMerchant);
 router.delete("/users/:id", deleteMerchant);
+router.post("/users/:id/reset-password", adminResetPassword);
 
 export default router;

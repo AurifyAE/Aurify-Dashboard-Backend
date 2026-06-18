@@ -13,11 +13,11 @@ export interface AuthRequest extends Request {
 }
 
 // ─── PROTECT MIDDLEWARE ───────────────────────────────────────────────────────
-export const protect = (
+export const protect = async (
     req: Request,
     res: Response,
     next: NextFunction
-): void => {
+): Promise<void> => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -37,9 +37,26 @@ export const protect = (
             companyName: string;
         };
 
+        const { default: User } = await import("../models/User");
+        const userExists = await User.findById(decoded.id);
+        if (!userExists) {
+            res.status(401).json({
+                success: false,
+                message: "User no longer exists.",
+            });
+            return;
+        }
+        if (userExists.status !== "active") {
+            res.status(403).json({
+                success: false,
+                message: "User is suspended or inactive.",
+            });
+            return;
+        }
+
         (req as AuthRequest).user = decoded;
         next();
-    } catch {
+    } catch (error) {
         res.status(401).json({
             success: false,
             message: "Invalid or expired token. Please login again.",

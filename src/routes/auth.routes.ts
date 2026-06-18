@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, getMe } from "../controllers/auth.controller";
+import { register, login, getMe, updateProfile } from "../controllers/auth.controller";
 import { protect } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -12,5 +12,8 @@ router.post("/login", login);
 
 // GET /api/auth/me  (protected)
 router.get("/me", protect, getMe);
+
+// PUT /api/auth/profile (protected)
+router.put("/profile", protect, updateProfile);
 
 export default router;
