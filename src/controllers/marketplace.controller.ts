@@ -441,7 +441,8 @@ export const listMerchantCommodities = async (req: AuthRequest, res: Response) =
       res.status(200).json({ success: true, data: [] });
       return;
     }
-    const commodities = await MerchantCommodity.find({ merchantId: merchant.merchantId }).sort({ createdAt: -1 }).lean();
+    const doc = await MerchantCommodity.findOne({ merchantId: merchant.merchantId }).lean();
+    const commodities = doc?.commodities ? doc.commodities.sort((a, b) => (b as any).createdAt?.getTime() - (a as any).createdAt?.getTime()) : [];
     res.status(200).json({ success: true, data: commodities });
   } catch (err) {
     console.error("listMerchantCommodities:", err);
@@ -470,18 +471,31 @@ export const upsertMerchantCommodity = async (req: AuthRequest, res: Response) =
       active: req.body.active ?? true,
     };
     const id = req.params.id;
-    const commodity = id
-      ? await MerchantCommodity.findOneAndUpdate(
-          { _id: id, merchantId: merchant.merchantId },
-          { $set: payload },
-          { new: true, runValidators: true }
-        )
-      : await MerchantCommodity.create({ ...payload, merchantId: merchant.merchantId });
-    res.status(id && !commodity ? 404 : 200).json(
-      commodity
-        ? { success: true, data: commodity }
-        : { success: false, message: "Commodity not found" }
-    );
+    
+    let doc = await MerchantCommodity.findOne({ merchantId: merchant.merchantId });
+    if (!doc) {
+      doc = new MerchantCommodity({ merchantId: merchant.merchantId, commodities: [] });
+    }
+
+    if (id) {
+      const idx = doc.commodities.findIndex(c => c._id?.toString() === id);
+      if (idx > -1) {
+        doc.commodities[idx] = Object.assign(doc.commodities[idx], payload);
+      } else {
+        res.status(404).json({ success: false, message: "Commodity not found" });
+        return;
+      }
+    } else {
+      doc.commodities.push(payload as any);
+    }
+    
+    await doc.save();
+    
+    const savedCommodity = id 
+      ? doc.commodities.find(c => c._id?.toString() === id)
+      : doc.commodities[doc.commodities.length - 1];
+
+    res.status(200).json({ success: true, data: savedCommodity });
   } catch (err) {
     console.error("upsertMerchantCommodity:", err);
     res.status(500).json({ success: false, message: "Failed to save commodity" });
@@ -496,11 +510,18 @@ export const deleteMerchantCommodity = async (req: AuthRequest, res: Response) =
       return;
     }
     const id = req.params.id;
-    const result = await MerchantCommodity.deleteOne({ _id: id, merchantId: merchant.merchantId });
-    if (result.deletedCount === 0) {
+    
+    const doc = await MerchantCommodity.findOneAndUpdate(
+      { merchantId: merchant.merchantId },
+      { $pull: { commodities: { _id: id } } },
+      { new: true }
+    );
+    
+    if (!doc) {
       res.status(404).json({ success: false, message: "Commodity not found" });
       return;
     }
+    
     res.status(200).json({ success: true, message: "Commodity deleted successfully" });
   } catch (err) {
     console.error("deleteMerchantCommodity:", err);

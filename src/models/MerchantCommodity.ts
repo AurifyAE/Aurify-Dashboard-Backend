@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IMerchantCommodity extends Document {
-  merchantId: string;
+export interface ICommodityItem {
+  _id?: mongoose.Types.ObjectId;
   name: string;
   metal: string;
   purity: string;
@@ -15,9 +15,13 @@ export interface IMerchantCommodity extends Document {
   active: boolean;
 }
 
-const MerchantCommoditySchema = new Schema<IMerchantCommodity>(
+export interface IMerchantCommodityDoc extends Document {
+  merchantId: string;
+  commodities: ICommodityItem[];
+}
+
+const CommodityItemSchema = new Schema<ICommodityItem>(
   {
-    merchantId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true },
     metal: { type: String, required: true, trim: true, uppercase: true },
     purity: { type: String, required: true, trim: true },
@@ -33,7 +37,13 @@ const MerchantCommoditySchema = new Schema<IMerchantCommodity>(
   { timestamps: true }
 );
 
-MerchantCommoditySchema.index({ merchantId: 1, active: 1, createdAt: -1 });
+const MerchantCommoditySchema = new Schema<IMerchantCommodityDoc>(
+  {
+    merchantId: { type: String, required: true, index: true, unique: true },
+    commodities: [CommodityItemSchema]
+  },
+  { timestamps: true }
+);
 
-const MerchantCommodity = mongoose.model<IMerchantCommodity>("MerchantCommodity", MerchantCommoditySchema);
+const MerchantCommodity = mongoose.model<IMerchantCommodityDoc>("MerchantCommodity", MerchantCommoditySchema);
 export default MerchantCommodity;
