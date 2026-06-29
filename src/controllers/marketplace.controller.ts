@@ -619,6 +619,28 @@ export const upsertNews = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const deleteNews = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchant = await getUserMerchant(req);
+    if (!merchant) {
+      res.status(404).json({ success: false, message: 'Register merchant first' });
+      return;
+    }
+    const result = await MerchantNews.findOneAndDelete({
+      _id: req.params.id,
+      merchantId: merchant.merchantId,
+    });
+    if (!result) {
+      res.status(404).json({ success: false, message: 'News not found' });
+      return;
+    }
+    res.json({ success: true, message: 'News deleted successfully' });
+  } catch (err) {
+    console.error('deleteNews:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete news' });
+  }
+};
+
 export const getLiveScreen = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await Merchant.findOne({

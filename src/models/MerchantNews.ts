@@ -15,8 +15,8 @@ export interface IMerchantNews extends Document {
 const MerchantNewsSchema = new Schema<IMerchantNews>(
   {
     merchantId: { type: String, required: true, index: true },
-    title: { type: String, required: true, trim: true },
-    content: { type: String, required: true, trim: true },
+    title: { type: String, trim: true, default: '' },
+    content: { type: String, trim: true, default: '' },
     type: {
       type: String,
       enum: ['Market News', 'Promotions', 'Offers', 'Announcements', 'Events'],

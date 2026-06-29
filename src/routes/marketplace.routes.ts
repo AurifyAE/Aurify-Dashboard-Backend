@@ -18,6 +18,7 @@ import {
   upsertMerchantCommodity,
   deleteMerchantCommodity,
   upsertNews,
+  deleteNews,
   listAllLiveScreens,
 } from '../controllers/marketplace.controller';
 import { protect, requireRole } from '../middlewares/auth.middleware';
@@ -55,5 +56,6 @@ router.delete('/merchant-commodities/:id', deleteMerchantCommodity);
 router.get('/news', listNews);
 router.post('/news', upsertNews);
 router.patch('/news/:id', upsertNews);
+router.delete('/news/:id', deleteNews);
 
 export default router;
