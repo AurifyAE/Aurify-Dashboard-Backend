@@ -4,11 +4,11 @@
 
 Copy `.env.example` to `.env` and set:
 
-| Variable     | Description                    | Example                          |
-|-------------|--------------------------------|----------------------------------|
-| `PORT`      | Server port                    | `5000`                           |
-| `MONGO_URI` | MongoDB connection string      | `mongodb://localhost:27017/aurify` |
-| `JWT_SECRET`| Secret for JWT signing        | (use a long random string)       |
+| Variable     | Description               | Example                            |
+| ------------ | ------------------------- | ---------------------------------- |
+| `PORT`       | Server port               | `5000`                             |
+| `MONGO_URI`  | MongoDB connection string | `mongodb://localhost:27017/aurify` |
+| `JWT_SECRET` | Secret for JWT signing    | (use a long random string)         |
 
 ## Database
 

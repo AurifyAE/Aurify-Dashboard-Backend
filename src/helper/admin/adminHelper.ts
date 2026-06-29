@@ -1,10 +1,10 @@
-import User from "../../models/User";
+import User from '../../models/User';
 
 const defaultCommodities = [
-  { symbol: "Gold", enabled: true },
-  { symbol: "Silver", enabled: true },
-  { symbol: "Platinum", enabled: true },
-  { symbol: "Copper", enabled: true },
+  { symbol: 'Gold', enabled: true },
+  { symbol: 'Silver', enabled: true },
+  { symbol: 'Platinum', enabled: true },
+  { symbol: 'Copper', enabled: true },
 ];
 
 export const getCommodity = async (userName: string): Promise<any | null> => {

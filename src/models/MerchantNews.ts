@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMerchantNews extends Document {
   merchantId: string;
@@ -19,8 +19,8 @@ const MerchantNewsSchema = new Schema<IMerchantNews>(
     content: { type: String, required: true, trim: true },
     type: {
       type: String,
-      enum: ["Market News", "Promotions", "Offers", "Announcements", "Events"],
-      default: "Announcements",
+      enum: ['Market News', 'Promotions', 'Offers', 'Announcements', 'Events'],
+      default: 'Announcements',
     },
     priority: { type: Number, default: 1, min: 1 },
     active: { type: Boolean, default: true, index: true },
@@ -28,8 +28,8 @@ const MerchantNewsSchema = new Schema<IMerchantNews>(
     endDate: { type: Date },
     placement: {
       type: String,
-      enum: ["Top Ticker", "Bottom Ticker", "Popup", "Slider"],
-      default: "Bottom Ticker",
+      enum: ['Top Ticker', 'Bottom Ticker', 'Popup', 'Slider'],
+      default: 'Bottom Ticker',
     },
   },
   { timestamps: true }
@@ -37,5 +37,5 @@ const MerchantNewsSchema = new Schema<IMerchantNews>(
 
 MerchantNewsSchema.index({ merchantId: 1, active: 1, priority: -1 });
 
-const MerchantNews = mongoose.model<IMerchantNews>("MerchantNews", MerchantNewsSchema);
+const MerchantNews = mongoose.model<IMerchantNews>('MerchantNews', MerchantNewsSchema);
 export default MerchantNews;

@@ -1,10 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const templateConfig_controller_1 = require("../controllers/templateConfig.controller");
-const auth_middleware_1 = require("../middlewares/auth.middleware");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const express_1 = require('express');
+const templateConfig_controller_1 = require('../controllers/templateConfig.controller');
+const auth_middleware_1 = require('../middlewares/auth.middleware');
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.protect);
-router.get("/:templateId", templateConfig_controller_1.getTemplateConfig);
-router.put("/:templateId", templateConfig_controller_1.upsertTemplateConfig);
+router.get('/:templateId', templateConfig_controller_1.getTemplateConfig);
+router.put('/:templateId', templateConfig_controller_1.upsertTemplateConfig);
 exports.default = router;

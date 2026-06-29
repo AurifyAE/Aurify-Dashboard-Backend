@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMerchantProfile extends Document {
   merchantId: string;
@@ -27,20 +27,20 @@ const MerchantProfileSchema = new Schema<IMerchantProfile>(
       },
     ],
     socialLinks: {
-      facebook: { type: String, default: "" },
-      instagram: { type: String, default: "" },
-      linkedin: { type: String, default: "" },
-      youtube: { type: String, default: "" },
-      tiktok: { type: String, default: "" },
+      facebook: { type: String, default: '' },
+      instagram: { type: String, default: '' },
+      linkedin: { type: String, default: '' },
+      youtube: { type: String, default: '' },
+      tiktok: { type: String, default: '' },
     },
     businessHours: {
-      mondayFriday: { type: String, default: "09:00 - 18:00" },
-      saturday: { type: String, default: "10:00 - 16:00" },
-      sunday: { type: String, default: "Closed" },
+      mondayFriday: { type: String, default: '09:00 - 18:00' },
+      saturday: { type: String, default: '10:00 - 16:00' },
+      sunday: { type: String, default: 'Closed' },
     },
   },
   { timestamps: true }
 );
 
-const MerchantProfile = mongoose.model<IMerchantProfile>("MerchantProfile", MerchantProfileSchema);
+const MerchantProfile = mongoose.model<IMerchantProfile>('MerchantProfile', MerchantProfileSchema);
 export default MerchantProfile;

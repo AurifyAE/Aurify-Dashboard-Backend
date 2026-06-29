@@ -1,54 +1,54 @@
-import { Response } from "express";
-import mongoose from "mongoose";
-import { AuthRequest } from "../middlewares/auth.middleware";
-import Merchant from "../models/Merchant";
-import MerchantProfile from "../models/MerchantProfile";
-import MarketplaceTheme from "../models/MarketplaceTheme";
-import MerchantTheme from "../models/MerchantTheme";
-import ScreenLayout from "../models/ScreenLayout";
-import MerchantCommodity from "../models/MerchantCommodity";
-import MerchantNews from "../models/MerchantNews";
-import { PublishedLayoutVersion, ScreenRecord } from "../models/PublishedScreen";
-import SpotRateSettings from "../models/SpotRateSettings";
-import SpotRate from "../models/SpotRate";
+import { Response } from 'express';
+import mongoose from 'mongoose';
+import { AuthRequest } from '../middlewares/auth.middleware';
+import Merchant from '../models/Merchant';
+import MerchantProfile from '../models/MerchantProfile';
+import MarketplaceTheme from '../models/MarketplaceTheme';
+import MerchantTheme from '../models/MerchantTheme';
+import ScreenLayout from '../models/ScreenLayout';
+import MerchantCommodity from '../models/MerchantCommodity';
+import MerchantNews from '../models/MerchantNews';
+import { PublishedLayoutVersion, ScreenRecord } from '../models/PublishedScreen';
+import SpotRateSettings from '../models/SpotRateSettings';
+import SpotRate from '../models/SpotRate';
 
-const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL || "https://screen.aurify.ae";
+const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL || 'https://screen.aurify.ae';
 
 const THEME_SEEDS = [
   {
-    name: "Royal Bullion",
-    category: "Luxury Gold",
-    widgets: ["Spot Rates", "Commodity Table", "News", "Clock", "London Fix"],
-    colors: { primary: "#d4a017", secondary: "#121826", accent: "#f8fafc" },
-    fonts: ["Cinzel", "Inter"],
+    name: 'Royal Bullion',
+    category: 'Luxury Gold',
+    widgets: ['Spot Rates', 'Commodity Table', 'News', 'Clock', 'London Fix'],
+    colors: { primary: '#d4a017', secondary: '#121826', accent: '#f8fafc' },
+    fonts: ['Cinzel', 'Inter'],
   },
   {
-    name: "Midnight Exchange",
-    category: "Modern Dark",
-    widgets: ["Spot Rates", "Commodity Table", "News", "Currency Rates"],
-    colors: { primary: "#38bdf8", secondary: "#0f172a", accent: "#22c55e" },
-    fonts: ["Inter", "Roboto Mono"],
+    name: 'Midnight Exchange',
+    category: 'Modern Dark',
+    widgets: ['Spot Rates', 'Commodity Table', 'News', 'Currency Rates'],
+    colors: { primary: '#38bdf8', secondary: '#0f172a', accent: '#22c55e' },
+    fonts: ['Inter', 'Roboto Mono'],
   },
   {
-    name: "Executive Rate Board",
-    category: "Corporate",
-    widgets: ["Spot Rates", "Commodity Table", "Date", "Contact Information"],
-    colors: { primary: "#2563eb", secondary: "#ffffff", accent: "#111827" },
-    fonts: ["Inter", "DM Sans"],
+    name: 'Executive Rate Board',
+    category: 'Corporate',
+    widgets: ['Spot Rates', 'Commodity Table', 'Date', 'Contact Information'],
+    colors: { primary: '#2563eb', secondary: '#ffffff', accent: '#111827' },
+    fonts: ['Inter', 'DM Sans'],
   },
   {
-    name: "Jewellery Showcase",
-    category: "Jewellery Premium",
-    widgets: ["Image Banner", "Commodity Table", "News", "Social Links"],
-    colors: { primary: "#be185d", secondary: "#18181b", accent: "#facc15" },
-    fonts: ["Playfair Display", "Poppins"],
+    name: 'Jewellery Showcase',
+    category: 'Jewellery Premium',
+    widgets: ['Image Banner', 'Commodity Table', 'News', 'Social Links'],
+    colors: { primary: '#be185d', secondary: '#18181b', accent: '#facc15' },
+    fonts: ['Playfair Display', 'Poppins'],
   },
   {
-    name: "Majlis Premium",
-    category: "Arabic Premium",
-    widgets: ["Spot Rates", "Commodity Table", "Clock", "QR Code"],
-    colors: { primary: "#16a34a", secondary: "#111827", accent: "#d4a017" },
-    fonts: ["Cairo", "Inter"],
+    name: 'Majlis Premium',
+    category: 'Arabic Premium',
+    widgets: ['Spot Rates', 'Commodity Table', 'Clock', 'QR Code'],
+    colors: { primary: '#16a34a', secondary: '#111827', accent: '#d4a017' },
+    fonts: ['Cairo', 'Inter'],
   },
 ];
 
@@ -56,22 +56,22 @@ const slugify = (value: string) =>
   value
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .slice(0, 60);
 
 const merchantIdFromUser = (userId: string) => `m_${userId}`;
 
 const getUserMerchant = async (req: AuthRequest) => {
-  if (!req.user?.id) throw new Error("Unauthorized");
+  if (!req.user?.id) throw new Error('Unauthorized');
   const merchant = await Merchant.findOne({ userId: req.user.id });
   return merchant;
 };
 
 const ensureUserMerchant = async (req: AuthRequest) => {
-  if (!req.user?.id) throw new Error("Unauthorized");
+  if (!req.user?.id) throw new Error('Unauthorized');
   const existing = await Merchant.findOne({ userId: req.user.id });
-  if (!existing) throw new Error("Merchant profile not found. Please contact support.");
+  if (!existing) throw new Error('Merchant profile not found. Please contact support.');
   return existing;
 };
 
@@ -92,28 +92,32 @@ export const getMyMerchant = async (req: AuthRequest, res: Response) => {
     const merchantData = { ...merchant.toObject(), commodities: spotRateDoc?.commodities || [] };
     res.status(200).json({ success: true, data: merchantData });
   } catch (err) {
-    console.error("getMyMerchant:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch merchant" });
+    console.error('getMyMerchant:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant' });
   }
 };
 
 export const registerMerchant = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     const existing = await Merchant.findOne({ userId: req.user.id });
     if (existing) {
-      res.status(200).json({ success: true, data: existing, message: "Merchant already registered" });
+      res
+        .status(200)
+        .json({ success: true, data: existing, message: 'Merchant already registered' });
       return;
     }
 
-    const companyName = String(req.body.companyName || req.user.companyName || "").trim();
-    const email = String(req.body.email || req.user.email || "").trim().toLowerCase();
+    const companyName = String(req.body.companyName || req.user.companyName || '').trim();
+    const email = String(req.body.email || req.user.email || '')
+      .trim()
+      .toLowerCase();
     if (!companyName || !email) {
-      res.status(400).json({ success: false, message: "companyName and email are required" });
+      res.status(400).json({ success: false, message: 'companyName and email are required' });
       return;
     }
 
@@ -138,7 +142,7 @@ export const registerMerchant = async (req: AuthRequest, res: Response) => {
       email,
       phone: req.body.phone,
       whatsapp: req.body.whatsapp,
-      status: "Pending",
+      status: 'Pending',
       services: req.body.services,
       branding: req.body.branding,
       visibility: req.body.visibility,
@@ -153,8 +157,8 @@ export const registerMerchant = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ success: true, data: merchant });
   } catch (err: any) {
-    console.error("registerMerchant:", err);
-    res.status(500).json({ success: false, message: err.message || "Failed to register merchant" });
+    console.error('registerMerchant:', err);
+    res.status(500).json({ success: false, message: err.message || 'Failed to register merchant' });
   }
 };
 
@@ -162,8 +166,8 @@ export const approveMerchant = async (req: AuthRequest, res: Response) => {
   try {
     const { merchantId } = req.params;
     const { status } = req.body;
-    if (!["Pending", "Active", "Suspended"].includes(status)) {
-      res.status(400).json({ success: false, message: "Invalid merchant status" });
+    if (!['Pending', 'Active', 'Suspended'].includes(status)) {
+      res.status(400).json({ success: false, message: 'Invalid merchant status' });
       return;
     }
     const merchant = await Merchant.findOneAndUpdate(
@@ -172,13 +176,13 @@ export const approveMerchant = async (req: AuthRequest, res: Response) => {
       { new: true, runValidators: true }
     );
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Merchant not found" });
+      res.status(404).json({ success: false, message: 'Merchant not found' });
       return;
     }
     res.status(200).json({ success: true, data: merchant });
   } catch (err) {
-    console.error("approveMerchant:", err);
-    res.status(500).json({ success: false, message: "Failed to update status" });
+    console.error('approveMerchant:', err);
+    res.status(500).json({ success: false, message: 'Failed to update status' });
   }
 };
 
@@ -186,11 +190,24 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
     const merchantPatch: Record<string, unknown> = {};
-    ["companyName", "logo", "phone", "whatsapp", "website", "address", "branding", "visibility"].forEach((key) => {
+    [
+      'companyName',
+      'logo',
+      'phone',
+      'whatsapp',
+      'website',
+      'address',
+      'branding',
+      'visibility',
+    ].forEach((key) => {
       if (req.body[key] !== undefined) merchantPatch[key] = req.body[key];
     });
     if (Object.keys(merchantPatch).length) {
-      await Merchant.updateOne({ merchantId: merchant.merchantId }, { $set: merchantPatch }, { runValidators: true });
+      await Merchant.updateOne(
+        { merchantId: merchant.merchantId },
+        { $set: merchantPatch },
+        { runValidators: true }
+      );
     }
     const profile = await MerchantProfile.findOneAndUpdate(
       { merchantId: merchant.merchantId },
@@ -210,8 +227,8 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     const updatedMerchant = await Merchant.findOne({ merchantId: merchant.merchantId });
     res.status(200).json({ success: true, data: { merchant: updatedMerchant, profile } });
   } catch (err) {
-    console.error("updateProfile:", err);
-    res.status(500).json({ success: false, message: "Failed to update profile" });
+    console.error('updateProfile:', err);
+    res.status(500).json({ success: false, message: 'Failed to update profile' });
   }
 };
 
@@ -219,25 +236,27 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const profile = await MerchantProfile.findOne({ merchantId: merchant.merchantId }).lean();
     res.status(200).json({ success: true, data: { merchant, profile } });
   } catch (err) {
-    console.error("getProfile:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch profile" });
+    console.error('getProfile:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch profile' });
   }
 };
 
 export const listThemes = async (_req: AuthRequest, res: Response) => {
   try {
     await ensureMarketplaceThemes();
-    const themes = await MarketplaceTheme.find({ active: true }).sort({ category: 1, name: 1 }).lean();
+    const themes = await MarketplaceTheme.find({ active: true })
+      .sort({ category: 1, name: 1 })
+      .lean();
     res.status(200).json({ success: true, data: themes });
   } catch (err) {
-    console.error("listThemes:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch themes" });
+    console.error('listThemes:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch themes' });
   }
 };
 
@@ -245,12 +264,12 @@ export const installTheme = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const theme = await MarketplaceTheme.findById(req.params.themeId).lean();
     if (!theme) {
-      res.status(404).json({ success: false, message: "Theme not found" });
+      res.status(404).json({ success: false, message: 'Theme not found' });
       return;
     }
     const installed = await MerchantTheme.findOneAndUpdate(
@@ -269,8 +288,8 @@ export const installTheme = async (req: AuthRequest, res: Response) => {
     );
     res.status(200).json({ success: true, data: installed });
   } catch (err) {
-    console.error("installTheme:", err);
-    res.status(500).json({ success: false, message: "Failed to install theme" });
+    console.error('installTheme:', err);
+    res.status(500).json({ success: false, message: 'Failed to install theme' });
   }
 };
 
@@ -281,11 +300,13 @@ export const listMerchantThemes = async (req: AuthRequest, res: Response) => {
       res.status(200).json({ success: true, data: [] });
       return;
     }
-    const themes = await MerchantTheme.find({ merchantId: merchant.merchantId }).sort({ installedAt: -1 }).lean();
+    const themes = await MerchantTheme.find({ merchantId: merchant.merchantId })
+      .sort({ installedAt: -1 })
+      .lean();
     res.status(200).json({ success: true, data: themes });
   } catch (err) {
-    console.error("listMerchantThemes:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch installed themes" });
+    console.error('listMerchantThemes:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch installed themes' });
   }
 };
 
@@ -296,38 +317,42 @@ export const listLayouts = async (req: AuthRequest, res: Response) => {
       res.status(200).json({ success: true, data: [] });
       return;
     }
-    const layouts = await ScreenLayout.find({ merchantId: merchant.merchantId }).sort({ updatedAt: -1 }).lean();
-    const layoutsWithSlug = layouts.map(l => ({ ...l, merchantSlug: merchant.slug }));
+    const layouts = await ScreenLayout.find({ merchantId: merchant.merchantId })
+      .sort({ updatedAt: -1 })
+      .lean();
+    const layoutsWithSlug = layouts.map((l) => ({ ...l, merchantSlug: merchant.slug }));
     res.status(200).json({ success: true, data: layoutsWithSlug });
   } catch (err) {
-    console.error("listLayouts:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch layouts" });
+    console.error('listLayouts:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch layouts' });
   }
 };
 
 export const saveLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
-    
+
     // Check screen limits if this is a new layout
     if (!req.body.layoutId) {
-      const currentScreensCount = await ScreenLayout.countDocuments({ merchantId: merchant.merchantId });
+      const currentScreensCount = await ScreenLayout.countDocuments({
+        merchantId: merchant.merchantId,
+      });
       if (currentScreensCount >= (merchant.maxScreens || 1)) {
-        res.status(403).json({ 
-          success: false, 
-          message: `Screen limit reached. Your plan allows up to ${merchant.maxScreens || 1} screen(s). Please upgrade to add more.` 
+        res.status(403).json({
+          success: false,
+          message: `Screen limit reached. Your plan allows up to ${merchant.maxScreens || 1} screen(s). Please upgrade to add more.`,
         });
         return;
       }
     }
 
     const layoutId = req.body.layoutId || `layout_${new mongoose.Types.ObjectId().toString()}`;
-    const screenSlug = slugify(req.body.screenSlug || "main") || "main";
+    const screenSlug = slugify(req.body.screenSlug || 'main') || 'main';
     const layout = await ScreenLayout.findOneAndUpdate(
       { layoutId, merchantId: merchant.merchantId },
       {
         $set: {
-          name: req.body.name || "Main Screen",
+          name: req.body.name || 'Main Screen',
           screenSlug,
           themeId: req.body.themeId,
           header: req.body.header || {},
@@ -336,7 +361,7 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
           footer: req.body.footer || {},
           widgets: req.body.widgets || [],
           styles: req.body.styles || {},
-          status: "draft",
+          status: 'draft',
         },
         $setOnInsert: { layoutId, merchantId: merchant.merchantId },
       },
@@ -344,8 +369,8 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
     );
     res.status(200).json({ success: true, data: layout });
   } catch (err: unknown) {
-    console.error("saveLayout:", err);
-    const message = err instanceof Error ? err.message : "Failed to save layout";
+    console.error('saveLayout:', err);
+    const message = err instanceof Error ? err.message : 'Failed to save layout';
     res.status(500).json({ success: false, message });
   }
 };
@@ -354,14 +379,14 @@ export const deleteLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const { layoutId } = req.params;
-    
+
     // Delete from ScreenLayout
     await ScreenLayout.deleteOne({ layoutId, merchantId: merchant.merchantId });
-    
+
     // Also remove from PublishedScreens and un-live the ScreenRecord if applicable
     await PublishedLayoutVersion.deleteMany({ layoutId, merchantId: merchant.merchantId });
     await ScreenRecord.updateMany(
@@ -369,10 +394,10 @@ export const deleteLayout = async (req: AuthRequest, res: Response) => {
       { $set: { live: false, layoutId: null, themeId: null, liveUrl: null } }
     );
 
-    res.status(200).json({ success: true, message: "Layout deleted successfully" });
+    res.status(200).json({ success: true, message: 'Layout deleted successfully' });
   } catch (err) {
-    console.error("deleteLayout:", err);
-    res.status(500).json({ success: false, message: "Failed to delete layout" });
+    console.error('deleteLayout:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete layout' });
   }
 };
 
@@ -380,23 +405,30 @@ export const publishLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
-    if (merchant.status !== "Active") {
-      res.status(400).json({ success: false, message: "Merchant must be Active before going live" });
+    if (merchant.status !== 'Active') {
+      res
+        .status(400)
+        .json({ success: false, message: 'Merchant must be Active before going live' });
       return;
     }
-    const layout = await ScreenLayout.findOne({ layoutId: req.params.layoutId, merchantId: merchant.merchantId }).lean();
+    const layout = await ScreenLayout.findOne({
+      layoutId: req.params.layoutId,
+      merchantId: merchant.merchantId,
+    }).lean();
     if (!layout) {
-      res.status(404).json({ success: false, message: "Layout not found" });
+      res.status(404).json({ success: false, message: 'Layout not found' });
       return;
     }
     if (!layout.themeId && !layout.header?.layout) {
-      res.status(400).json({ success: false, message: "Theme or layout selected validation failed" });
+      res
+        .status(400)
+        .json({ success: false, message: 'Theme or layout selected validation failed' });
       return;
     }
-    
+
     const latest = await PublishedLayoutVersion.findOne({
       merchantId: merchant.merchantId,
       layoutId: layout.layoutId,
@@ -405,11 +437,11 @@ export const publishLayout = async (req: AuthRequest, res: Response) => {
     const published = await PublishedLayoutVersion.create({
       layoutId: layout.layoutId,
       merchantId: merchant.merchantId,
-      status: "published",
+      status: 'published',
       version,
       snapshot: JSON.parse(JSON.stringify(layout)) as Record<string, unknown>,
     });
-    await ScreenLayout.updateOne({ layoutId: layout.layoutId }, { $set: { status: "published" } });
+    await ScreenLayout.updateOne({ layoutId: layout.layoutId }, { $set: { status: 'published' } });
     const liveUrl = `${SCREEN_BASE_URL}/${merchant.slug}/${layout.screenSlug}`;
     const screen = await ScreenRecord.findOneAndUpdate(
       { merchantId: merchant.merchantId, screenSlug: layout.screenSlug },
@@ -425,12 +457,15 @@ export const publishLayout = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true, runValidators: true }
     );
 
-    console.log("screenUpdated", { merchantId: merchant.merchantId, screenId: screen._id.toString() });
+    console.log('screenUpdated', {
+      merchantId: merchant.merchantId,
+      screenId: screen._id.toString(),
+    });
 
     res.status(200).json({ success: true, data: { published, screen, liveUrl } });
   } catch (err) {
-    console.error("publishLayout:", err);
-    res.status(500).json({ success: false, message: "Failed to publish layout" });
+    console.error('publishLayout:', err);
+    res.status(500).json({ success: false, message: 'Failed to publish layout' });
   }
 };
 
@@ -442,11 +477,15 @@ export const listMerchantCommodities = async (req: AuthRequest, res: Response) =
       return;
     }
     const doc = await MerchantCommodity.findOne({ merchantId: merchant.merchantId }).lean();
-    const commodities = doc?.commodities ? doc.commodities.sort((a, b) => (b as any).createdAt?.getTime() - (a as any).createdAt?.getTime()) : [];
+    const commodities = doc?.commodities
+      ? doc.commodities.sort(
+          (a, b) => (b as any).createdAt?.getTime() - (a as any).createdAt?.getTime()
+        )
+      : [];
     res.status(200).json({ success: true, data: commodities });
   } catch (err) {
-    console.error("listMerchantCommodities:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch merchant commodities" });
+    console.error('listMerchantCommodities:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch merchant commodities' });
   }
 };
 
@@ -454,7 +493,7 @@ export const upsertMerchantCommodity = async (req: AuthRequest, res: Response) =
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const payload = {
@@ -471,34 +510,34 @@ export const upsertMerchantCommodity = async (req: AuthRequest, res: Response) =
       active: req.body.active ?? true,
     };
     const id = req.params.id;
-    
+
     let doc = await MerchantCommodity.findOne({ merchantId: merchant.merchantId });
     if (!doc) {
       doc = new MerchantCommodity({ merchantId: merchant.merchantId, commodities: [] });
     }
 
     if (id) {
-      const idx = doc.commodities.findIndex(c => c._id?.toString() === id);
+      const idx = doc.commodities.findIndex((c) => c._id?.toString() === id);
       if (idx > -1) {
         doc.commodities[idx] = Object.assign(doc.commodities[idx], payload);
       } else {
-        res.status(404).json({ success: false, message: "Commodity not found" });
+        res.status(404).json({ success: false, message: 'Commodity not found' });
         return;
       }
     } else {
       doc.commodities.push(payload as any);
     }
-    
+
     await doc.save();
-    
-    const savedCommodity = id 
-      ? doc.commodities.find(c => c._id?.toString() === id)
+
+    const savedCommodity = id
+      ? doc.commodities.find((c) => c._id?.toString() === id)
       : doc.commodities[doc.commodities.length - 1];
 
     res.status(200).json({ success: true, data: savedCommodity });
   } catch (err) {
-    console.error("upsertMerchantCommodity:", err);
-    res.status(500).json({ success: false, message: "Failed to save commodity" });
+    console.error('upsertMerchantCommodity:', err);
+    res.status(500).json({ success: false, message: 'Failed to save commodity' });
   }
 };
 
@@ -506,29 +545,28 @@ export const deleteMerchantCommodity = async (req: AuthRequest, res: Response) =
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const id = req.params.id;
-    
+
     const doc = await MerchantCommodity.findOneAndUpdate(
       { merchantId: merchant.merchantId },
       { $pull: { commodities: { _id: id } } },
       { new: true }
     );
-    
+
     if (!doc) {
-      res.status(404).json({ success: false, message: "Commodity not found" });
+      res.status(404).json({ success: false, message: 'Commodity not found' });
       return;
     }
-    
-    res.status(200).json({ success: true, message: "Commodity deleted successfully" });
+
+    res.status(200).json({ success: true, message: 'Commodity deleted successfully' });
   } catch (err) {
-    console.error("deleteMerchantCommodity:", err);
-    res.status(500).json({ success: false, message: "Failed to delete commodity" });
+    console.error('deleteMerchantCommodity:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete commodity' });
   }
 };
-
 
 export const listNews = async (req: AuthRequest, res: Response) => {
   try {
@@ -537,11 +575,13 @@ export const listNews = async (req: AuthRequest, res: Response) => {
       res.status(200).json({ success: true, data: [] });
       return;
     }
-    const news = await MerchantNews.find({ merchantId: merchant.merchantId }).sort({ priority: -1, createdAt: -1 }).lean();
+    const news = await MerchantNews.find({ merchantId: merchant.merchantId })
+      .sort({ priority: -1, createdAt: -1 })
+      .lean();
     res.status(200).json({ success: true, data: news });
   } catch (err) {
-    console.error("listNews:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch news" });
+    console.error('listNews:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch news' });
   }
 };
 
@@ -549,7 +589,7 @@ export const upsertNews = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await getUserMerchant(req);
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Register merchant first" });
+      res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
     const payload = {
@@ -570,27 +610,36 @@ export const upsertNews = async (req: AuthRequest, res: Response) => {
           { new: true, runValidators: true }
         )
       : await MerchantNews.create({ ...payload, merchantId: merchant.merchantId });
-    res.status(id && !news ? 404 : 200).json(news ? { success: true, data: news } : { success: false, message: "News not found" });
+    res
+      .status(id && !news ? 404 : 200)
+      .json(news ? { success: true, data: news } : { success: false, message: 'News not found' });
   } catch (err) {
-    console.error("upsertNews:", err);
-    res.status(500).json({ success: false, message: "Failed to save news" });
+    console.error('upsertNews:', err);
+    res.status(500).json({ success: false, message: 'Failed to save news' });
   }
 };
 
 export const getLiveScreen = async (req: AuthRequest, res: Response) => {
   try {
-    const merchant = await Merchant.findOne({ slug: req.params.merchantSlug, status: "Active" }).lean();
+    const merchant = await Merchant.findOne({
+      slug: req.params.merchantSlug,
+      status: 'Active',
+    }).lean();
     if (!merchant) {
-      res.status(404).json({ success: false, message: "Live merchant not found" });
+      res.status(404).json({ success: false, message: 'Live merchant not found' });
       return;
     }
     const screenSlugParam = Array.isArray(req.params.screenSlug)
       ? req.params.screenSlug[0]
       : req.params.screenSlug;
-    const screenSlug = slugify(screenSlugParam || "main") || "main";
-    const screen = await ScreenRecord.findOne({ merchantId: merchant.merchantId, screenSlug, live: true }).lean();
+    const screenSlug = slugify(screenSlugParam || 'main') || 'main';
+    const screen = await ScreenRecord.findOne({
+      merchantId: merchant.merchantId,
+      screenSlug,
+      live: true,
+    }).lean();
     if (!screen) {
-      res.status(404).json({ success: false, message: "Live screen not found" });
+      res.status(404).json({ success: false, message: 'Live screen not found' });
       return;
     }
     const [layout, theme, profile, spotRateDoc, news, spotRateSettings] = await Promise.all([
@@ -598,7 +647,9 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
       MerchantTheme.findOne({ merchantId: merchant.merchantId, themeId: screen.themeId }).lean(),
       MerchantProfile.findOne({ merchantId: merchant.merchantId }).lean(),
       SpotRate.findOne({ createdBy: merchant.userId }).lean(),
-      MerchantNews.find({ merchantId: merchant.merchantId, active: true }).sort({ priority: -1 }).lean(),
+      MerchantNews.find({ merchantId: merchant.merchantId, active: true })
+        .sort({ priority: -1 })
+        .lean(),
       SpotRateSettings.findOne({ userId: merchant.userId }).lean(),
     ]);
 
@@ -609,8 +660,8 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
       data: { merchant, profile, screen, theme, layout, commodities, news, spotRateSettings },
     });
   } catch (err) {
-    console.error("getLiveScreen:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch live screen" });
+    console.error('getLiveScreen:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch live screen' });
   }
 };
 
@@ -629,15 +680,15 @@ export const listAllLiveScreens = async (req: AuthRequest, res: Response): Promi
         screenSlug: s.screenSlug,
         layoutId: s.layoutId,
         liveUrl: s.liveUrl,
-        companyName: merchant?.companyName || "Unknown Merchant",
-        logo: merchant?.logo || "",
-        slug: merchant?.slug || "",
+        companyName: merchant?.companyName || 'Unknown Merchant',
+        logo: merchant?.logo || '',
+        slug: merchant?.slug || '',
       };
     });
 
     res.status(200).json({ success: true, data });
   } catch (err) {
-    console.error("listAllLiveScreens:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch live screens" });
+    console.error('listAllLiveScreens:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch live screens' });
   }
 };

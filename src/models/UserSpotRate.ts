@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { ICommodity } from "./SpotRate";
+import mongoose, { Schema, Document } from 'mongoose';
+import { ICommodity } from './SpotRate';
 
 export interface ICategory {
   categoryId: string;
@@ -23,12 +23,12 @@ const CategorySchema = new Schema(
 const UserSpotRateSchema = new Schema<IUserSpotRate>({
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true,
     index: true,
   },
   categories: [CategorySchema],
 });
 
-export const UserSpotRateModel = mongoose.model<IUserSpotRate>("UserSpotRate", UserSpotRateSchema);
+export const UserSpotRateModel = mongoose.model<IUserSpotRate>('UserSpotRate', UserSpotRateSchema);
 export default UserSpotRateModel;

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICommodity {
   _id?: any;
@@ -45,13 +45,13 @@ const CommoditySchema = new Schema({
   buyCharge: { type: Number, default: 0 },
   sellCharge: { type: Number, default: 0 },
   metal_name: { type: String, default: null },
-  group: { type: String, default: "commodity" },
+  group: { type: String, default: 'commodity' },
 });
 
 const SpotRateSchema = new Schema<ISpotRate>({
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true,
     index: true,
     unique: true,
@@ -75,6 +75,6 @@ const SpotRateSchema = new Schema<ISpotRate>({
   commodities: [CommoditySchema],
 });
 
-const SpotRate = mongoose.model<ISpotRate>("SpotRate", SpotRateSchema);
+const SpotRate = mongoose.model<ISpotRate>('SpotRate', SpotRateSchema);
 
 export default SpotRate;

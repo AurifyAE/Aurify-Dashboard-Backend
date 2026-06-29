@@ -1,48 +1,40 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import User from "../models/User";
-import Merchant from "../models/Merchant";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import User from '../models/User';
+import Merchant from '../models/Merchant';
 
 const slugify = (value: string) =>
   value
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 const merchantIdFromUser = (userId: string) => `m_${userId}`;
 
 const signToken = (payload: object): string => {
   const secret = process.env.JWT_SECRET as string;
-  const expiresIn = (process.env.JWT_EXPIRES_IN || "7d") as string;
+  const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as string;
   return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 };
 
 // ─── REGISTER ───────────────────────────────────────────────────────────────
-export const register = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { companyName, email, phone, password, confirmPassword, logo, services } = req.body;
 
     // --- Validation ---
     const errors: Record<string, string> = {};
-    if (!companyName?.trim()) errors.companyName = "Company name is required";
-    if (!email?.trim()) errors.email = "Email is required";
-    else if (!/^\S+@\S+\.\S+$/.test(email))
-      errors.email = "Invalid email format";
-    if (!phone?.trim()) errors.phone = "Phone number is required";
-    if (!password) errors.password = "Password is required";
-    else if (password.length < 8)
-      errors.password = "Password must be at least 8 characters";
-    if (!confirmPassword)
-      errors.confirmPassword = "Please confirm your password";
-    else if (password !== confirmPassword)
-      errors.confirmPassword = "Passwords do not match";
+    if (!companyName?.trim()) errors.companyName = 'Company name is required';
+    if (!email?.trim()) errors.email = 'Email is required';
+    else if (!/^\S+@\S+\.\S+$/.test(email)) errors.email = 'Invalid email format';
+    if (!phone?.trim()) errors.phone = 'Phone number is required';
+    if (!password) errors.password = 'Password is required';
+    else if (password.length < 8) errors.password = 'Password must be at least 8 characters';
+    if (!confirmPassword) errors.confirmPassword = 'Please confirm your password';
+    else if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
 
     if (Object.keys(errors).length > 0) {
       res.status(422).json({ success: false, errors });
@@ -54,7 +46,7 @@ export const register = async (
     if (existing) {
       res.status(409).json({
         success: false,
-        errors: { email: "An account with this email already exists" },
+        errors: { email: 'An account with this email already exists' },
       });
       return;
     }
@@ -68,8 +60,8 @@ export const register = async (
       email: email.toLowerCase().trim(),
       phone: phone?.trim(),
       passwordHash,
-      role: "user",
-      status: "active",
+      role: 'user',
+      status: 'active',
     });
 
     // --- Generate slug and merchantId ---
@@ -88,7 +80,7 @@ export const register = async (
       slug,
       email: email.toLowerCase().trim(),
       phone: phone?.trim(),
-      status: "Pending", // Default status, requires admin approval
+      status: 'Pending', // Default status, requires admin approval
       services: {
         tvDisplay: services?.tvDisplay || false,
         website: services?.website || false,
@@ -110,7 +102,7 @@ export const register = async (
 
     res.status(201).json({
       success: true,
-      message: "Account created successfully",
+      message: 'Account created successfully',
       token,
       user: {
         id: user._id,
@@ -127,20 +119,16 @@ export const register = async (
 };
 
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     // --- Validation ---
     const errors: Record<string, string> = {};
-    if (!email?.trim()) errors.email = "Email/Username is required";
-    else if (email.trim().toLowerCase() !== "admin" && !/^\S+@\S+\.\S+$/.test(email))
-      errors.email = "Invalid email format";
-    if (!password) errors.password = "Password is required";
+    if (!email?.trim()) errors.email = 'Email/Username is required';
+    else if (email.trim().toLowerCase() !== 'admin' && !/^\S+@\S+\.\S+$/.test(email))
+      errors.email = 'Invalid email format';
+    if (!password) errors.password = 'Password is required';
 
     if (Object.keys(errors).length > 0) {
       res.status(422).json({ success: false, errors });
@@ -152,16 +140,16 @@ export const login = async (
     if (!user) {
       res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: 'Invalid email or password',
       });
       return;
     }
 
     // --- Check status ---
-    if (user.status !== "active") {
+    if (user.status !== 'active') {
       res.status(403).json({
         success: false,
-        message: "Your account has been suspended. Please contact support.",
+        message: 'Your account has been suspended. Please contact support.',
       });
       return;
     }
@@ -171,7 +159,7 @@ export const login = async (
     if (!isMatch) {
       res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: 'Invalid email or password',
       });
       return;
     }
@@ -186,7 +174,7 @@ export const login = async (
 
     res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: 'Login successful',
       token,
       user: {
         id: user._id,
@@ -203,16 +191,12 @@ export const login = async (
 };
 
 // ─── GET ME ───────────────────────────────────────────────────────────────────
-export const getMe = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authReq = req as Request & { user?: { id: string } };
-    const user = await User.findById(authReq.user?.id).select("-passwordHash");
+    const user = await User.findById(authReq.user?.id).select('-passwordHash');
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
+      res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
     res.status(200).json({ success: true, user });
@@ -225,7 +209,7 @@ export const getMe = async (
 export const updateProfile = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const authReq = req as Request & { user?: { id: string } };
@@ -233,7 +217,7 @@ export const updateProfile = async (
 
     const user = await User.findById(authReq.user?.id);
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
+      res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
 
@@ -242,16 +226,20 @@ export const updateProfile = async (
 
     if (newPassword) {
       if (!currentPassword) {
-        res.status(400).json({ success: false, message: "Current password is required to set a new password" });
+        res
+          .status(400)
+          .json({ success: false, message: 'Current password is required to set a new password' });
         return;
       }
       const isMatch = await user.comparePassword(currentPassword);
       if (!isMatch) {
-        res.status(401).json({ success: false, message: "Incorrect current password" });
+        res.status(401).json({ success: false, message: 'Incorrect current password' });
         return;
       }
       if (newPassword.length < 8) {
-        res.status(400).json({ success: false, message: "New password must be at least 8 characters" });
+        res
+          .status(400)
+          .json({ success: false, message: 'New password must be at least 8 characters' });
         return;
       }
       user.passwordHash = await bcrypt.hash(newPassword, 12);
@@ -263,11 +251,11 @@ export const updateProfile = async (
     if (companyName || phone) {
       await Merchant.findOneAndUpdate(
         { userId: user._id.toString() },
-        { 
-          $set: { 
-            ...(companyName && { companyName }), 
-            ...(phone && { phone }) 
-          } 
+        {
+          $set: {
+            ...(companyName && { companyName }),
+            ...(phone && { phone }),
+          },
         }
       );
     }
@@ -282,7 +270,7 @@ export const updateProfile = async (
 
     res.status(200).json({
       success: true,
-      message: "Profile updated successfully",
+      message: 'Profile updated successfully',
       token,
       user: {
         id: user._id,

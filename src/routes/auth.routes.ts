@@ -1,19 +1,19 @@
-import { Router } from "express";
-import { register, login, getMe, updateProfile } from "../controllers/auth.controller";
-import { protect } from "../middlewares/auth.middleware";
+import { Router } from 'express';
+import { register, login, getMe, updateProfile } from '../controllers/auth.controller';
+import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // POST /api/auth/register
-router.post("/register", register);
+router.post('/register', register);
 
 // POST /api/auth/login
-router.post("/login", login);
+router.post('/login', login);
 
 // GET /api/auth/me  (protected)
-router.get("/me", protect, getMe);
+router.get('/me', protect, getMe);
 
 // PUT /api/auth/profile (protected)
-router.put("/profile", protect, updateProfile);
+router.put('/profile', protect, updateProfile);
 
 export default router;

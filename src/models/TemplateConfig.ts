@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITemplateConfig extends Document {
   userId: string;
@@ -27,15 +27,11 @@ const TemplateConfigSchema = new Schema<ITemplateConfig>(
       required: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 TemplateConfigSchema.index({ userId: 1, templateId: 1 }, { unique: true });
 
-const TemplateConfig = mongoose.model<ITemplateConfig>(
-  "TemplateConfig",
-  TemplateConfigSchema,
-);
+const TemplateConfig = mongoose.model<ITemplateConfig>('TemplateConfig', TemplateConfigSchema);
 
 export default TemplateConfig;
-

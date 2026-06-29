@@ -1,82 +1,74 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { UserRole } from "../models/User";
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { UserRole } from '../models/User';
 
 // Extend Request to include user
 export interface AuthRequest extends Request {
-    user?: {
-        id: string;
-        email: string;
-        role: UserRole;
-        companyName: string;
-    };
+  user?: {
+    id: string;
+    email: string;
+    role: UserRole;
+    companyName: string;
+  };
 }
 
 // ─── PROTECT MIDDLEWARE ───────────────────────────────────────────────────────
-export const protect = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            res.status(401).json({
-                success: false,
-                message: "Access denied. No token provided.",
-            });
-            return;
-        }
-
-        const token = authHeader.split(" ")[1];
-        const secret = process.env.JWT_SECRET as string;
-        const decoded = jwt.verify(token, secret) as {
-            id: string;
-            email: string;
-            role: UserRole;
-            companyName: string;
-        };
-
-        const { default: User } = await import("../models/User");
-        const userExists = await User.findById(decoded.id);
-        if (!userExists) {
-            res.status(401).json({
-                success: false,
-                message: "User no longer exists.",
-            });
-            return;
-        }
-        if (userExists.status !== "active") {
-            res.status(403).json({
-                success: false,
-                message: "User is suspended or inactive.",
-            });
-            return;
-        }
-
-        (req as AuthRequest).user = decoded;
-        next();
-    } catch (error) {
-        res.status(401).json({
-            success: false,
-            message: "Invalid or expired token. Please login again.",
-        });
+export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({
+        success: false,
+        message: 'Access denied. No token provided.',
+      });
+      return;
     }
+
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET as string;
+    const decoded = jwt.verify(token, secret) as {
+      id: string;
+      email: string;
+      role: UserRole;
+      companyName: string;
+    };
+
+    const { default: User } = await import('../models/User');
+    const userExists = await User.findById(decoded.id);
+    if (!userExists) {
+      res.status(401).json({
+        success: false,
+        message: 'User no longer exists.',
+      });
+      return;
+    }
+    if (userExists.status !== 'active') {
+      res.status(403).json({
+        success: false,
+        message: 'User is suspended or inactive.',
+      });
+      return;
+    }
+
+    (req as AuthRequest).user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token. Please login again.',
+    });
+  }
 };
 
 // ─── OPTIONAL AUTH: set req.user if valid token, never reject ──────────────
-export const optionalAuth = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       next();
       return;
     }
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.split(' ')[1];
     const secret = process.env.JWT_SECRET as string;
     const decoded = jwt.verify(token, secret) as {
       id: string;
@@ -93,15 +85,15 @@ export const optionalAuth = (
 
 // ─── ROLE GUARD MIDDLEWARE ─────────────────────────────────────────────────
 export const requireRole = (...roles: UserRole[]) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
-        const authReq = req as AuthRequest;
-        if (!authReq.user || !roles.includes(authReq.user.role)) {
-            res.status(403).json({
-                success: false,
-                message: "Access denied. You do not have permission to perform this action.",
-            });
-            return;
-        }
-        next();
-    };
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthRequest;
+    if (!authReq.user || !roles.includes(authReq.user.role)) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. You do not have permission to perform this action.',
+      });
+      return;
+    }
+    next();
+  };
 };

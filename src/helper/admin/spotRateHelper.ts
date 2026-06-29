@@ -1,5 +1,5 @@
-import User from "../../models/User";
-import SpotRate from "../../models/SpotRate";
+import User from '../../models/User';
+import SpotRate from '../../models/SpotRate';
 
 export const getMetals = async (userName: string): Promise<string[] | null> => {
   const user = await User.findOne({ email: userName.toLowerCase() });

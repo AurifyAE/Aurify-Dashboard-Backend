@@ -1,6 +1,6 @@
-import { Response } from "express";
-import SpotRateSettings from "../models/SpotRateSettings";
-import { AuthRequest } from "../middlewares/auth.middleware";
+import { Response } from 'express';
+import SpotRateSettings from '../models/SpotRateSettings';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
 const defaults = {
   goldBidSpread: 0,
@@ -13,7 +13,7 @@ export const getSpotRateSettings = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
     const doc = await SpotRateSettings.findOne({ userId }).lean();
@@ -28,8 +28,8 @@ export const getSpotRateSettings = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (err) {
-    console.error("getSpotRateSettings:", err);
-    res.status(500).json({ success: false, message: "Failed to fetch settings" });
+    console.error('getSpotRateSettings:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch settings' });
   }
 };
 
@@ -37,15 +37,15 @@ export const updateSpotRateSettings = async (req: AuthRequest, res: Response) =>
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
     const { goldBidSpread, goldAskSpread, silverBidSpread, silverAskSpread } = req.body;
     const update: Record<string, number> = {};
-    if (typeof goldBidSpread === "number") update.goldBidSpread = goldBidSpread;
-    if (typeof goldAskSpread === "number") update.goldAskSpread = goldAskSpread;
-    if (typeof silverBidSpread === "number") update.silverBidSpread = silverBidSpread;
-    if (typeof silverAskSpread === "number") update.silverAskSpread = silverAskSpread;
+    if (typeof goldBidSpread === 'number') update.goldBidSpread = goldBidSpread;
+    if (typeof goldAskSpread === 'number') update.goldAskSpread = goldAskSpread;
+    if (typeof silverBidSpread === 'number') update.silverBidSpread = silverBidSpread;
+    if (typeof silverAskSpread === 'number') update.silverAskSpread = silverAskSpread;
 
     const doc = await SpotRateSettings.findOneAndUpdate(
       { userId },
@@ -63,7 +63,7 @@ export const updateSpotRateSettings = async (req: AuthRequest, res: Response) =>
       },
     });
   } catch (err) {
-    console.error("updateSpotRateSettings:", err);
-    res.status(500).json({ success: false, message: "Failed to update settings" });
+    console.error('updateSpotRateSettings:', err);
+    res.status(500).json({ success: false, message: 'Failed to update settings' });
   }
 };

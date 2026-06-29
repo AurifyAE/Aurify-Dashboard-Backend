@@ -1,19 +1,19 @@
-import { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
-import User from "../models/User";
-import SpotRate, { ICommodity } from "../models/SpotRate";
+import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
+import User from '../models/User';
+import SpotRate, { ICommodity } from '../models/SpotRate';
 
 const commodityFields = [
-  "metal",
-  "purity",
-  "unit",
-  "weight",
-  "buyPremium",
-  "sellPremium",
-  "buyCharge",
-  "sellCharge",
-  "metal_name",
-  "group",
+  'metal',
+  'purity',
+  'unit',
+  'weight',
+  'buyPremium',
+  'sellPremium',
+  'buyCharge',
+  'sellCharge',
+  'metal_name',
+  'group',
 ];
 
 const sanitizeCommodityData = (commodity: any = {}) =>
@@ -25,23 +25,30 @@ const sanitizeCommodityData = (commodity: any = {}) =>
   }, {});
 
 const defaultCommodities = [
-  { symbol: "Gold", enabled: true },
-  { symbol: "Silver", enabled: true },
-  { symbol: "Platinum", enabled: true },
-  { symbol: "Copper", enabled: true },
+  { symbol: 'Gold', enabled: true },
+  { symbol: 'Silver', enabled: true },
+  { symbol: 'Platinum', enabled: true },
+  { symbol: 'Copper', enabled: true },
 ];
 
-export const updateCommodity = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateCommodity = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const adminId = req.params.adminId as string;
     const commodityId = req.params.commodityId as string;
     const commodity = req.body;
 
     const updatedSpotRate = await SpotRate.findOneAndUpdate(
-      { createdBy: new mongoose.Types.ObjectId(adminId), "commodities._id": new mongoose.Types.ObjectId(commodityId) },
+      {
+        createdBy: new mongoose.Types.ObjectId(adminId),
+        'commodities._id': new mongoose.Types.ObjectId(commodityId),
+      },
       {
         $set: {
-          "commodities.$": {
+          'commodities.$': {
             metal: commodity.metal,
             purity: commodity.purity,
             unit: commodity.unit,
@@ -52,7 +59,7 @@ export const updateCommodity = async (req: Request, res: Response, next: NextFun
             buyCharge: commodity.buyCharge ?? 0,
             sellCharge: commodity.sellCharge ?? 0,
             metal_name: commodity.metal_name?.trim() || null,
-            group: commodity.group ?? "commodity",
+            group: commodity.group ?? 'commodity',
           },
         },
       },
@@ -60,18 +67,22 @@ export const updateCommodity = async (req: Request, res: Response, next: NextFun
     );
 
     if (!updatedSpotRate) {
-      res.status(404).json({ message: "SpotRate or commodity not found" });
+      res.status(404).json({ message: 'SpotRate or commodity not found' });
       return;
     }
 
-    res.status(200).json({ message: "Commodity updated successfully", data: updatedSpotRate });
+    res.status(200).json({ message: 'Commodity updated successfully', data: updatedSpotRate });
   } catch (error: any) {
-    console.error("Error updating commodity:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error updating commodity:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const deleteSpotRateCommodity = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteSpotRateCommodity = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const adminId = req.params.adminId as string;
     const commodityId = req.params.commodityId as string;
@@ -82,14 +93,14 @@ export const deleteSpotRateCommodity = async (req: Request, res: Response, next:
     );
 
     if (result.modifiedCount === 0) {
-      res.status(404).json({ message: "Commodity not found or already deleted" });
+      res.status(404).json({ message: 'Commodity not found or already deleted' });
       return;
     }
 
-    res.status(200).json({ message: "Commodity deleted successfully" });
+    res.status(200).json({ message: 'Commodity deleted successfully' });
   } catch (error: any) {
-    console.error("Error deleting commodity:", error);
-    res.status(500).json({ error: "An error occurred while deleting the commodity" });
+    console.error('Error deleting commodity:', error);
+    res.status(500).json({ error: 'An error occurred while deleting the commodity' });
   }
 };
 
@@ -105,12 +116,12 @@ export const updateSpread = async (req: Request, res: Response): Promise<void> =
     }
 
     let fieldName: string;
-    if (type === "bid" || type === "ask") {
+    if (type === 'bid' || type === 'ask') {
       fieldName = `${metal.toLowerCase()}${type.charAt(0).toUpperCase() + type.slice(1)}Spread`;
-    } else if (type === "low" || type === "high") {
+    } else if (type === 'low' || type === 'high') {
       fieldName = `${metal.toLowerCase()}${type.charAt(0).toUpperCase() + type.slice(1)}Margin`;
     } else {
-      res.status(400).json({ message: "Invalid type specified" });
+      res.status(400).json({ message: 'Invalid type specified' });
       return;
     }
 
@@ -122,28 +133,32 @@ export const updateSpread = async (req: Request, res: Response): Promise<void> =
     );
 
     if (!updatedSpotRate) {
-      res.status(404).json({ message: "SpotRate not found and could not be created" });
+      res.status(404).json({ message: 'SpotRate not found and could not be created' });
       return;
     }
 
-    res.status(200).json({ message: "Spread updated successfully", data: updatedSpotRate });
+    res.status(200).json({ message: 'Spread updated successfully', data: updatedSpotRate });
   } catch (error: any) {
-    console.error("Error updating spread:", error);
-    res.status(500).json({ message: "Error updating spread" });
+    console.error('Error updating spread:', error);
+    res.status(500).json({ message: 'Error updating spread' });
   }
 };
 
-export const getCommodityController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getCommodityController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const userName = req.params.userName as string;
     if (!userName) {
-      res.status(400).json({ success: false, message: "userName parameter is required." });
+      res.status(400).json({ success: false, message: 'userName parameter is required.' });
       return;
     }
 
     const user = await User.findOne({ email: userName.toLowerCase() });
     if (!user) {
-      res.status(404).json({ success: false, message: "Admin data not found." });
+      res.status(404).json({ success: false, message: 'Admin data not found.' });
       return;
     }
 
@@ -158,18 +173,22 @@ export const getCommodityController = async (req: Request, res: Response, next: 
       },
     });
   } catch (error: any) {
-    console.error("Error fetching commodity details:", error);
+    console.error('Error fetching commodity details:', error);
     next(error);
   }
 };
 
-export const getSpotRate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getSpotRate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const adminId = req.params.adminId as string;
     const createdBy = new mongoose.Types.ObjectId(adminId);
     let spotRates = await SpotRate.findOne({ createdBy });
     if (!spotRates) {
-      res.status(204).json({ message: "Spot rates not found for this user" });
+      res.status(204).json({ message: 'Spot rates not found for this user' });
       return;
     }
 
@@ -177,7 +196,7 @@ export const getSpotRate = async (req: Request, res: Response, next: NextFunctio
     if (Array.isArray(spotRates.commodities)) {
       spotRates.commodities.forEach((commodity) => {
         if (!commodity.group) {
-          commodity.group = "commodity";
+          commodity.group = 'commodity';
           hasCommodityNormalizationChanges = true;
         }
       });
@@ -189,12 +208,16 @@ export const getSpotRate = async (req: Request, res: Response, next: NextFunctio
 
     res.json(spotRates);
   } catch (error: any) {
-    console.error("Error fetching spot rates:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Error fetching spot rates:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
-export const createCommodity = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createCommodity = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { adminId, commodity } = req.body;
     const createdBy = new mongoose.Types.ObjectId(adminId);
@@ -207,41 +230,49 @@ export const createCommodity = async (req: Request, res: Response, next: NextFun
     const normalizedCommodity = {
       ...sanitizeCommodityData(commodity),
       metal_name: commodity.metal_name?.trim() || null,
-      group: commodity.group ?? "commodity",
+      group: commodity.group ?? 'commodity',
     };
 
     spotrate.commodities.push(normalizedCommodity);
     const updatedSpotrate = await spotrate.save();
 
     res.status(200).json({
-      message: "Commodity created successfully",
+      message: 'Commodity created successfully',
       data: updatedSpotrate,
     });
   } catch (error: any) {
-    console.error("Error creating commodity:", error);
-    res.status(500).json({ message: "Error creating commodity", error: error.message });
+    console.error('Error creating commodity:', error);
+    res.status(500).json({ message: 'Error creating commodity', error: error.message });
   }
 };
 
-export const getServerController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getServerController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
-    res.status(200).json({ selectedServerURL: "https://api.aurify.ae" });
+    res.status(200).json({ selectedServerURL: 'https://api.aurify.ae' });
   } catch (error: any) {
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
-export const getAdminDataController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAdminDataController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const userName = req.params.userName as string;
     if (!userName) {
-      res.status(400).json({ success: false, message: "userName parameter is required." });
+      res.status(400).json({ success: false, message: 'userName parameter is required.' });
       return;
     }
 
     const user = await User.findOne({ email: userName.toLowerCase() });
     if (!user) {
-      res.status(404).json({ success: false, message: "Admin data not found." });
+      res.status(404).json({ success: false, message: 'Admin data not found.' });
       return;
     }
 
@@ -256,7 +287,7 @@ export const getAdminDataController = async (req: Request, res: Response, next: 
       },
     });
   } catch (error: any) {
-    console.error("Error fetching admin data:", error);
+    console.error('Error fetching admin data:', error);
     next(error);
   }
 };

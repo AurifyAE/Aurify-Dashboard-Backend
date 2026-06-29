@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMarketplaceTheme extends Document {
   name: string;
@@ -17,7 +17,7 @@ const MarketplaceThemeSchema = new Schema<IMarketplaceTheme>(
     category: {
       type: String,
       required: true,
-      enum: ["Luxury Gold", "Modern Dark", "Corporate", "Jewellery Premium", "Arabic Premium"],
+      enum: ['Luxury Gold', 'Modern Dark', 'Corporate', 'Jewellery Premium', 'Arabic Premium'],
       index: true,
     },
     thumbnail: { type: String, trim: true },
@@ -30,5 +30,8 @@ const MarketplaceThemeSchema = new Schema<IMarketplaceTheme>(
   { timestamps: true }
 );
 
-const MarketplaceTheme = mongoose.model<IMarketplaceTheme>("MarketplaceTheme", MarketplaceThemeSchema);
+const MarketplaceTheme = mongoose.model<IMarketplaceTheme>(
+  'MarketplaceTheme',
+  MarketplaceThemeSchema
+);
 export default MarketplaceTheme;

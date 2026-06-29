@@ -1,9 +1,9 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPublishedLayoutVersion extends Document {
   layoutId: string;
   merchantId: string;
-  status: "published";
+  status: 'published';
   version: number;
   snapshot: Record<string, unknown>;
 }
@@ -22,7 +22,7 @@ const PublishedLayoutVersionSchema = new Schema<IPublishedLayoutVersion>(
   {
     layoutId: { type: String, required: true, index: true },
     merchantId: { type: String, required: true, index: true },
-    status: { type: String, enum: ["published"], default: "published" },
+    status: { type: String, enum: ['published'], default: 'published' },
     version: { type: Number, required: true },
     snapshot: { type: Schema.Types.Mixed, required: true },
   },
@@ -46,8 +46,8 @@ PublishedLayoutVersionSchema.index({ merchantId: 1, layoutId: 1, version: -1 });
 ScreenRecordSchema.index({ merchantId: 1, screenSlug: 1 }, { unique: true });
 
 export const PublishedLayoutVersion = mongoose.model<IPublishedLayoutVersion>(
-  "PublishedLayoutVersion",
+  'PublishedLayoutVersion',
   PublishedLayoutVersionSchema
 );
 
-export const ScreenRecord = mongoose.model<IScreenRecord>("ScreenRecord", ScreenRecordSchema);
+export const ScreenRecord = mongoose.model<IScreenRecord>('ScreenRecord', ScreenRecordSchema);

@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
-export type MerchantStatus = "Pending" | "Active" | "Suspended";
+export type MerchantStatus = 'Pending' | 'Active' | 'Suspended';
 
 export interface IMerchant extends Document {
   merchantId: string;
@@ -56,7 +56,7 @@ const MerchantSchema = new Schema<IMerchant>(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers and hyphens"],
+      match: [/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers and hyphens'],
     },
     logo: { type: String, trim: true },
     businessType: { type: String, trim: true },
@@ -69,14 +69,14 @@ const MerchantSchema = new Schema<IMerchant>(
       required: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, "Please provide a valid email"],
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
     },
     phone: { type: String, trim: true },
     whatsapp: { type: String, trim: true },
     status: {
       type: String,
-      enum: ["Pending", "Active", "Suspended"],
-      default: "Pending",
+      enum: ['Pending', 'Active', 'Suspended'],
+      default: 'Pending',
       index: true,
     },
     services: {
@@ -87,10 +87,10 @@ const MerchantSchema = new Schema<IMerchant>(
     additionalFeatures: { type: [String], default: [] },
     allowedCommodities: { type: [String], default: [] },
     branding: {
-      primaryColor: { type: String, default: "#d4a017" },
-      secondaryColor: { type: String, default: "#111827" },
-      accentColor: { type: String, default: "#38bdf8" },
-      fontFamily: { type: String, default: "Inter" },
+      primaryColor: { type: String, default: '#d4a017' },
+      secondaryColor: { type: String, default: '#111827' },
+      accentColor: { type: String, default: '#38bdf8' },
+      fontFamily: { type: String, default: 'Inter' },
     },
     visibility: {
       showCompanyLogo: { type: Boolean, default: true },
@@ -104,13 +104,13 @@ const MerchantSchema = new Schema<IMerchant>(
     packageId: { type: String, trim: true },
     maxScreens: { type: Number, default: 1 },
     maxDevices: { type: Number, default: 1 },
-    serviceEndDate: { 
-      type: Date, 
+    serviceEndDate: {
+      type: Date,
       default: () => {
         const d = new Date();
         d.setFullYear(d.getFullYear() + 1);
         return d;
-      }
+      },
     },
   },
   { timestamps: true }
@@ -118,5 +118,5 @@ const MerchantSchema = new Schema<IMerchant>(
 
 MerchantSchema.index({ userId: 1, merchantId: 1 });
 
-const Merchant = mongoose.model<IMerchant>("Merchant", MerchantSchema);
+const Merchant = mongoose.model<IMerchant>('Merchant', MerchantSchema);
 export default Merchant;

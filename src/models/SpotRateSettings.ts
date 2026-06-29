@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ISpotRateSettings extends Document {
   userId: string;
@@ -27,7 +27,7 @@ const SpotRateSettingsSchema = new Schema<ISpotRateSettings>(
 );
 
 const SpotRateSettings = mongoose.model<ISpotRateSettings>(
-  "SpotRateSettings",
+  'SpotRateSettings',
   SpotRateSettingsSchema
 );
 export default SpotRateSettings;

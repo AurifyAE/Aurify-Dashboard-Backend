@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
-export type LayoutStatus = "draft" | "published" | "archived";
+export type LayoutStatus = 'draft' | 'published' | 'archived';
 
 export interface IScreenLayout extends Document {
   layoutId: string;
@@ -22,7 +22,7 @@ const ScreenLayoutSchema = new Schema<IScreenLayout>(
     layoutId: { type: String, required: true, unique: true, index: true },
     merchantId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true },
-    screenSlug: { type: String, required: true, lowercase: true, trim: true, default: "main" },
+    screenSlug: { type: String, required: true, lowercase: true, trim: true, default: 'main' },
     themeId: { type: String, trim: true },
     header: { type: Schema.Types.Mixed, default: {} },
     body: { type: Schema.Types.Mixed, default: {} },
@@ -30,12 +30,12 @@ const ScreenLayoutSchema = new Schema<IScreenLayout>(
     footer: { type: Schema.Types.Mixed, default: {} },
     widgets: [{ type: String, trim: true }],
     styles: { type: Schema.Types.Mixed, default: {} },
-    status: { type: String, enum: ["draft", "published", "archived"], default: "draft" },
+    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
   },
   { timestamps: true }
 );
 
 ScreenLayoutSchema.index({ merchantId: 1, screenSlug: 1, status: 1 });
 
-const ScreenLayout = mongoose.model<IScreenLayout>("ScreenLayout", ScreenLayoutSchema);
+const ScreenLayout = mongoose.model<IScreenLayout>('ScreenLayout', ScreenLayoutSchema);
 export default ScreenLayout;

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ICommodityItem {
   _id?: mongoose.Types.ObjectId;
@@ -40,10 +40,13 @@ const CommodityItemSchema = new Schema<ICommodityItem>(
 const MerchantCommoditySchema = new Schema<IMerchantCommodityDoc>(
   {
     merchantId: { type: String, required: true, index: true, unique: true },
-    commodities: [CommodityItemSchema]
+    commodities: [CommodityItemSchema],
   },
   { timestamps: true }
 );
 
-const MerchantCommodity = mongoose.model<IMerchantCommodityDoc>("MerchantCommodity", MerchantCommoditySchema);
+const MerchantCommodity = mongoose.model<IMerchantCommodityDoc>(
+  'MerchantCommodity',
+  MerchantCommoditySchema
+);
 export default MerchantCommodity;

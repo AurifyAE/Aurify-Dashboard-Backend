@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMerchantTheme extends Document {
   merchantId: string;
@@ -23,5 +23,5 @@ const MerchantThemeSchema = new Schema<IMerchantTheme>(
 
 MerchantThemeSchema.index({ merchantId: 1, themeId: 1 }, { unique: true });
 
-const MerchantTheme = mongoose.model<IMerchantTheme>("MerchantTheme", MerchantThemeSchema);
+const MerchantTheme = mongoose.model<IMerchantTheme>('MerchantTheme', MerchantThemeSchema);
 export default MerchantTheme;
