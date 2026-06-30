@@ -85,7 +85,7 @@ const MerchantSchema = new Schema<IMerchant>(
       website: { type: Boolean, default: false },
     },
     additionalFeatures: { type: [String], default: [] },
-    allowedCommodities: { type: [String], default: [] },
+    allowedCommodities: { type: [String], default: ['Gold', 'Silver'] },
     branding: {
       primaryColor: { type: String, default: '#d4a017' },
       secondaryColor: { type: String, default: '#111827' },
