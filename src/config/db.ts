@@ -20,7 +20,6 @@ const connectDB = async (): Promise<void> => {
     process.exit(1);
   }
 };
-
 // Graceful disconnect (e.g. on SIGTERM)
 export const disconnectDB = async (): Promise<void> => {
   try {
