@@ -103,7 +103,7 @@ const MerchantSchema = new Schema<IMerchant>(
     },
     packageId: { type: String, trim: true },
     maxScreens: { type: Number, default: 1 },
-    maxDevices: { type: Number, default: 1 },
+    maxDevices: { type: Number, default: 2 },
     serviceEndDate: {
       type: Date,
       default: () => {
