@@ -575,9 +575,10 @@ export const listNews = async (req: AuthRequest, res: Response) => {
       res.status(200).json({ success: true, data: [] });
       return;
     }
-    const news = await MerchantNews.find({ merchantId: merchant.merchantId })
-      .sort({ priority: -1, createdAt: -1 })
-      .lean();
+    const doc = await MerchantNews.findOne({ merchantId: merchant.merchantId }).lean();
+    const news = doc?.news
+      ? [...doc.news].sort((a, b) => (b.priority ?? 1) - (a.priority ?? 1))
+      : [];
     res.status(200).json({ success: true, data: news });
   } catch (err) {
     console.error('listNews:', err);
@@ -603,16 +604,31 @@ export const upsertNews = async (req: AuthRequest, res: Response) => {
       placement: req.body.placement,
     };
     const id = req.params.id;
-    const news = id
-      ? await MerchantNews.findOneAndUpdate(
-          { _id: id, merchantId: merchant.merchantId },
-          { $set: payload },
-          { new: true, runValidators: true }
-        )
-      : await MerchantNews.create({ ...payload, merchantId: merchant.merchantId });
-    res
-      .status(id && !news ? 404 : 200)
-      .json(news ? { success: true, data: news } : { success: false, message: 'News not found' });
+
+    let doc = await MerchantNews.findOne({ merchantId: merchant.merchantId });
+    if (!doc) {
+      doc = new MerchantNews({ merchantId: merchant.merchantId, news: [] });
+    }
+
+    if (id) {
+      const idx = doc.news.findIndex((n) => n._id?.toString() === id);
+      if (idx > -1) {
+        doc.news[idx] = Object.assign(doc.news[idx], payload);
+      } else {
+        res.status(404).json({ success: false, message: 'News item not found' });
+        return;
+      }
+    } else {
+      doc.news.push(payload as any);
+    }
+
+    await doc.save();
+
+    const savedItem = id
+      ? doc.news.find((n) => n._id?.toString() === id)
+      : doc.news[doc.news.length - 1];
+
+    res.status(200).json({ success: true, data: savedItem });
   } catch (err) {
     console.error('upsertNews:', err);
     res.status(500).json({ success: false, message: 'Failed to save news' });
@@ -626,12 +642,13 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
       res.status(404).json({ success: false, message: 'Register merchant first' });
       return;
     }
-    const result = await MerchantNews.findOneAndDelete({
-      _id: req.params.id,
-      merchantId: merchant.merchantId,
-    });
+    const result = await MerchantNews.findOneAndUpdate(
+      { merchantId: merchant.merchantId },
+      { $pull: { news: { _id: new mongoose.Types.ObjectId(req.params.id) } } },
+      { new: true }
+    );
     if (!result) {
-      res.status(404).json({ success: false, message: 'News not found' });
+      res.status(404).json({ success: false, message: 'News item not found' });
       return;
     }
     res.json({ success: true, message: 'News deleted successfully' });
@@ -669,17 +686,18 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
       MerchantTheme.findOne({ merchantId: merchant.merchantId, themeId: screen.themeId }).lean(),
       MerchantProfile.findOne({ merchantId: merchant.merchantId }).lean(),
       SpotRate.findOne({ createdBy: merchant.userId }).lean(),
-      MerchantNews.find({ merchantId: merchant.merchantId, active: true })
-        .sort({ priority: -1 })
-        .lean(),
+      MerchantNews.findOne({ merchantId: merchant.merchantId }).lean(),
       SpotRateSettings.findOne({ userId: merchant.userId }).lean(),
     ]);
 
     const commodities = spotRateDoc?.commodities || [];
+    const newsItems = (news as any)?.news
+      ? (news as any).news.filter((n: any) => n.active).sort((a: any, b: any) => (b.priority ?? 1) - (a.priority ?? 1))
+      : [];
 
     res.status(200).json({
       success: true,
-      data: { merchant, profile, screen, theme, layout, commodities, news, spotRateSettings },
+      data: { merchant, profile, screen, theme, layout, commodities, news: newsItems, spotRateSettings },
     });
   } catch (err) {
     console.error('getLiveScreen:', err);

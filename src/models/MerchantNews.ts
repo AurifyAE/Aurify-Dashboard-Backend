@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IMerchantNews extends Document {
-  merchantId: string;
+export interface INewsItem {
+  _id?: mongoose.Types.ObjectId;
   title: string;
   content: string;
   type: string;
@@ -12,9 +12,13 @@ export interface IMerchantNews extends Document {
   placement: string;
 }
 
-const MerchantNewsSchema = new Schema<IMerchantNews>(
+export interface IMerchantNewsDoc extends Document {
+  merchantId: string;
+  news: INewsItem[];
+}
+
+const NewsItemSchema = new Schema<INewsItem>(
   {
-    merchantId: { type: String, required: true, index: true },
     title: { type: String, trim: true, default: '' },
     content: { type: String, trim: true, default: '' },
     type: {
@@ -23,7 +27,7 @@ const MerchantNewsSchema = new Schema<IMerchantNews>(
       default: 'Announcements',
     },
     priority: { type: Number, default: 1, min: 1 },
-    active: { type: Boolean, default: true, index: true },
+    active: { type: Boolean, default: true },
     startDate: { type: Date },
     endDate: { type: Date },
     placement: {
@@ -35,7 +39,13 @@ const MerchantNewsSchema = new Schema<IMerchantNews>(
   { timestamps: true }
 );
 
-MerchantNewsSchema.index({ merchantId: 1, active: 1, priority: -1 });
+const MerchantNewsSchema = new Schema<IMerchantNewsDoc>(
+  {
+    merchantId: { type: String, required: true, index: true, unique: true },
+    news: [NewsItemSchema],
+  },
+  { timestamps: true }
+);
 
-const MerchantNews = mongoose.model<IMerchantNews>('MerchantNews', MerchantNewsSchema);
+const MerchantNews = mongoose.model<IMerchantNewsDoc>('MerchantNews', MerchantNewsSchema);
 export default MerchantNews;
