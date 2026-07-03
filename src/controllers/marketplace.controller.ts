@@ -692,12 +692,23 @@ export const getLiveScreen = async (req: AuthRequest, res: Response) => {
 
     const commodities = spotRateDoc?.commodities || [];
     const newsItems = (news as any)?.news
-      ? (news as any).news.filter((n: any) => n.active).sort((a: any, b: any) => (b.priority ?? 1) - (a.priority ?? 1))
+      ? (news as any).news
+          .filter((n: any) => n.active)
+          .sort((a: any, b: any) => (b.priority ?? 1) - (a.priority ?? 1))
       : [];
 
     res.status(200).json({
       success: true,
-      data: { merchant, profile, screen, theme, layout, commodities, news: newsItems, spotRateSettings },
+      data: {
+        merchant,
+        profile,
+        screen,
+        theme,
+        layout,
+        commodities,
+        news: newsItems,
+        spotRateSettings,
+      },
     });
   } catch (err) {
     console.error('getLiveScreen:', err);
