@@ -186,10 +186,107 @@ export const approveMerchant = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const checkMerchantSlug = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchant = await ensureUserMerchant(req);
+    const slug = String(req.query.slug || '').trim().toLowerCase();
+
+    if (!slug) {
+      res.status(200).json({ success: true, data: { available: false, message: 'Slug is required.' } });
+      return;
+    }
+
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'Only lowercase letters, numbers, and hyphens are allowed.' },
+      });
+      return;
+    }
+
+    const RESERVED_SLUGS = [
+      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
+      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
+      'help', 'favicon.ico', 'robots.txt'
+    ];
+    if (RESERVED_SLUGS.includes(slug)) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'This slug is a reserved system keyword.' },
+      });
+      return;
+    }
+
+    const exists = await Merchant.findOne({ slug, merchantId: { $ne: merchant.merchantId } });
+    if (exists) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'This merchant URL is already taken.' },
+      });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: { available: true } });
+  } catch (err) {
+    console.error('checkMerchantSlug:', err);
+    res.status(500).json({ success: false, message: 'Failed to validate merchant slug' });
+  }
+};
+
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
     const merchantPatch: Record<string, unknown> = {};
+
+    // Check if slug is changing
+    if (req.body.slug !== undefined && req.body.slug !== merchant.slug) {
+      const newSlug = slugify(req.body.slug);
+
+      if (!newSlug) {
+        res.status(400).json({ success: false, message: 'Merchant slug is required.' });
+        return;
+      }
+
+      if (!/^[a-z0-9-]+$/.test(newSlug)) {
+        res.status(400).json({
+          success: false,
+          message: 'Merchant slug can only contain lowercase letters, numbers and hyphens.',
+        });
+        return;
+      }
+
+      const RESERVED_SLUGS = [
+        'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
+        'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
+        'help', 'favicon.ico', 'robots.txt'
+      ];
+      if (RESERVED_SLUGS.includes(newSlug)) {
+        res.status(400).json({
+          success: false,
+          message: 'This slug is a reserved system keyword.',
+        });
+        return;
+      }
+
+      const exists = await Merchant.findOne({ slug: newSlug, merchantId: { $ne: merchant.merchantId } });
+      if (exists) {
+        res.status(409).json({
+          success: false,
+          message: 'This merchant URL is already taken by another company.',
+        });
+        return;
+      }
+
+      merchantPatch.slug = newSlug;
+
+      // Update all ScreenRecords liveUrl for this merchant to point to new slug
+      const screens = await ScreenRecord.find({ merchantId: merchant.merchantId });
+      for (const screen of screens) {
+        const liveUrl = `${SCREEN_BASE_URL}/${newSlug}/${screen.screenSlug}`;
+        await ScreenRecord.updateOne({ _id: screen._id }, { $set: { liveUrl } });
+      }
+    }
+
     [
       'companyName',
       'logo',
@@ -202,6 +299,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     ].forEach((key) => {
       if (req.body[key] !== undefined) merchantPatch[key] = req.body[key];
     });
+
     if (Object.keys(merchantPatch).length) {
       await Merchant.updateOne(
         { merchantId: merchant.merchantId },
@@ -328,6 +426,62 @@ export const listLayouts = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const checkScreenSlug = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchant = await ensureUserMerchant(req);
+    const slug = String(req.query.slug || '').trim().toLowerCase();
+    const excludeLayoutId = String(req.query.excludeLayoutId || '').trim();
+
+    if (!slug) {
+      res.status(200).json({ success: true, data: { available: false, message: 'Slug is required.' } });
+      return;
+    }
+
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'Only lowercase letters, numbers, and hyphens are allowed.' },
+      });
+      return;
+    }
+
+    const RESERVED_SLUGS = [
+      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
+      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
+      'help', 'favicon.ico', 'robots.txt'
+    ];
+    if (RESERVED_SLUGS.includes(slug)) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'This slug is a reserved system keyword.' },
+      });
+      return;
+    }
+
+    const query: Record<string, any> = {
+      merchantId: merchant.merchantId,
+      screenSlug: slug,
+    };
+    if (excludeLayoutId) {
+      query.layoutId = { $ne: excludeLayoutId };
+    }
+
+    const exists = await ScreenLayout.findOne(query);
+    if (exists) {
+      res.status(200).json({
+        success: true,
+        data: { available: false, message: 'This URL is already in use by another screen.' },
+      });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: { available: true } });
+  } catch (err) {
+    console.error('checkScreenSlug:', err);
+    res.status(500).json({ success: false, message: 'Failed to validate slug' });
+  }
+};
+
 export const saveLayout = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
@@ -348,6 +502,34 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
 
     const layoutId = req.body.layoutId || `layout_${new mongoose.Types.ObjectId().toString()}`;
     const screenSlug = slugify(req.body.screenSlug || 'main') || 'main';
+
+    // ── Slug uniqueness check ──
+    const RESERVED_SLUGS = [
+      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
+      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
+      'help', 'favicon.ico', 'robots.txt'
+    ];
+    if (RESERVED_SLUGS.includes(screenSlug)) {
+      res.status(400).json({
+        success: false,
+        message: 'This slug is a reserved system keyword.',
+      });
+      return;
+    }
+
+    const exists = await ScreenLayout.findOne({
+      merchantId: merchant.merchantId,
+      screenSlug,
+      layoutId: { $ne: layoutId }
+    });
+    if (exists) {
+      res.status(409).json({
+        success: false,
+        message: 'This URL was just taken. Please choose another slug.',
+      });
+      return;
+    }
+
     const layout = await ScreenLayout.findOneAndUpdate(
       { layoutId, merchantId: merchant.merchantId },
       {
@@ -368,8 +550,15 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true, runValidators: true }
     );
     res.status(200).json({ success: true, data: layout });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error('saveLayout:', err);
+    if (err.code === 11000) {
+      res.status(409).json({
+        success: false,
+        message: 'This URL was just taken. Please choose another slug.',
+      });
+      return;
+    }
     const message = err instanceof Error ? err.message : 'Failed to save layout';
     res.status(500).json({ success: false, message });
   }
@@ -644,7 +833,7 @@ export const deleteNews = async (req: AuthRequest, res: Response) => {
     }
     const result = await MerchantNews.findOneAndUpdate(
       { merchantId: merchant.merchantId },
-      { $pull: { news: { _id: new mongoose.Types.ObjectId(req.params.id) } } },
+      { $pull: { news: { _id: new mongoose.Types.ObjectId(req.params.id as string) } } },
       { new: true }
     );
     if (!result) {

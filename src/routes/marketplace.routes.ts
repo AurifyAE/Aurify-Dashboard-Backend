@@ -20,6 +20,8 @@ import {
   upsertNews,
   deleteNews,
   listAllLiveScreens,
+  checkScreenSlug,
+  checkMerchantSlug,
 } from '../controllers/marketplace.controller';
 import { protect, requireRole } from '../middlewares/auth.middleware';
 
@@ -31,6 +33,8 @@ router.get('/live/:merchantSlug/:screenSlug', getLiveScreen);
 router.use(protect);
 
 router.get('/screens/all', listAllLiveScreens);
+router.get('/screens/check-slug', checkScreenSlug);
+router.get('/merchant/check-slug', checkMerchantSlug);
 
 router.get('/merchant/me', getMyMerchant);
 router.post('/merchant/register', registerMerchant);

@@ -35,7 +35,7 @@ const ScreenLayoutSchema = new Schema<IScreenLayout>(
   { timestamps: true }
 );
 
-ScreenLayoutSchema.index({ merchantId: 1, screenSlug: 1, status: 1 });
+ScreenLayoutSchema.index({ merchantId: 1, screenSlug: 1 }, { unique: true });
 
 const ScreenLayout = mongoose.model<IScreenLayout>('ScreenLayout', ScreenLayoutSchema);
 export default ScreenLayout;
