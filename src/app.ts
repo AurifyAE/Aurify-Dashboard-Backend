@@ -10,13 +10,18 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // In development, reflect any origin back to allow localhost, 127.0.0.1, local network IP, etc.
-      if (process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
-      const allowedOrigins = [process.env.FRONTEND_URL].filter(Boolean) as string[];
-      const isAllowed = !origin || allowedOrigins.includes(origin);
-      callback(null, isAllowed);
+      // Read allowed origins from env — comma-separated list
+      const allowed = (process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+
+      // Allow requests with no origin (Postman, server-to-server, mobile apps)
+      if (!origin) return callback(null, true);
+
+      if (allowed.includes(origin)) return callback(null, true);
+
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
     },
     credentials: true,
   })
