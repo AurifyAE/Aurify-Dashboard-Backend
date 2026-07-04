@@ -19,7 +19,7 @@ const startServer = async () => {
 
     const io = new Server(server, {
       cors: {
-        origin: '*', // Adjust depending on frontend URL
+        origin: process.env.FRONTEND_URL || 'https://screen.aurify.ae',
         methods: ['GET', 'POST'],
       },
     });
