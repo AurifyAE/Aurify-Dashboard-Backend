@@ -189,25 +189,45 @@ export const approveMerchant = async (req: AuthRequest, res: Response) => {
 export const checkMerchantSlug = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
-    const slug = String(req.query.slug || '').trim().toLowerCase();
+    const slug = String(req.query.slug || '')
+      .trim()
+      .toLowerCase();
 
     if (!slug) {
-      res.status(200).json({ success: true, data: { available: false, message: 'Slug is required.' } });
+      res
+        .status(200)
+        .json({ success: true, data: { available: false, message: 'Slug is required.' } });
       return;
     }
 
     if (!/^[a-z0-9-]+$/.test(slug)) {
       res.status(200).json({
         success: true,
-        data: { available: false, message: 'Only lowercase letters, numbers, and hyphens are allowed.' },
+        data: {
+          available: false,
+          message: 'Only lowercase letters, numbers, and hyphens are allowed.',
+        },
       });
       return;
     }
 
     const RESERVED_SLUGS = [
-      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
-      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
-      'help', 'favicon.ico', 'robots.txt'
+      'admin',
+      'api',
+      'assets',
+      'static',
+      'login',
+      'logout',
+      'register',
+      'screen',
+      'builder',
+      'dashboard',
+      'preview',
+      'settings',
+      'support',
+      'help',
+      'favicon.ico',
+      'robots.txt',
     ];
     if (RESERVED_SLUGS.includes(slug)) {
       res.status(200).json({
@@ -256,9 +276,22 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       }
 
       const RESERVED_SLUGS = [
-        'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
-        'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
-        'help', 'favicon.ico', 'robots.txt'
+        'admin',
+        'api',
+        'assets',
+        'static',
+        'login',
+        'logout',
+        'register',
+        'screen',
+        'builder',
+        'dashboard',
+        'preview',
+        'settings',
+        'support',
+        'help',
+        'favicon.ico',
+        'robots.txt',
       ];
       if (RESERVED_SLUGS.includes(newSlug)) {
         res.status(400).json({
@@ -268,7 +301,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         return;
       }
 
-      const exists = await Merchant.findOne({ slug: newSlug, merchantId: { $ne: merchant.merchantId } });
+      const exists = await Merchant.findOne({
+        slug: newSlug,
+        merchantId: { $ne: merchant.merchantId },
+      });
       if (exists) {
         res.status(409).json({
           success: false,
@@ -429,26 +465,46 @@ export const listLayouts = async (req: AuthRequest, res: Response) => {
 export const checkScreenSlug = async (req: AuthRequest, res: Response) => {
   try {
     const merchant = await ensureUserMerchant(req);
-    const slug = String(req.query.slug || '').trim().toLowerCase();
+    const slug = String(req.query.slug || '')
+      .trim()
+      .toLowerCase();
     const excludeLayoutId = String(req.query.excludeLayoutId || '').trim();
 
     if (!slug) {
-      res.status(200).json({ success: true, data: { available: false, message: 'Slug is required.' } });
+      res
+        .status(200)
+        .json({ success: true, data: { available: false, message: 'Slug is required.' } });
       return;
     }
 
     if (!/^[a-z0-9-]+$/.test(slug)) {
       res.status(200).json({
         success: true,
-        data: { available: false, message: 'Only lowercase letters, numbers, and hyphens are allowed.' },
+        data: {
+          available: false,
+          message: 'Only lowercase letters, numbers, and hyphens are allowed.',
+        },
       });
       return;
     }
 
     const RESERVED_SLUGS = [
-      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
-      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
-      'help', 'favicon.ico', 'robots.txt'
+      'admin',
+      'api',
+      'assets',
+      'static',
+      'login',
+      'logout',
+      'register',
+      'screen',
+      'builder',
+      'dashboard',
+      'preview',
+      'settings',
+      'support',
+      'help',
+      'favicon.ico',
+      'robots.txt',
     ];
     if (RESERVED_SLUGS.includes(slug)) {
       res.status(200).json({
@@ -505,9 +561,22 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
 
     // ── Slug uniqueness check ──
     const RESERVED_SLUGS = [
-      'admin', 'api', 'assets', 'static', 'login', 'logout', 'register',
-      'screen', 'builder', 'dashboard', 'preview', 'settings', 'support',
-      'help', 'favicon.ico', 'robots.txt'
+      'admin',
+      'api',
+      'assets',
+      'static',
+      'login',
+      'logout',
+      'register',
+      'screen',
+      'builder',
+      'dashboard',
+      'preview',
+      'settings',
+      'support',
+      'help',
+      'favicon.ico',
+      'robots.txt',
     ];
     if (RESERVED_SLUGS.includes(screenSlug)) {
       res.status(400).json({
@@ -520,7 +589,7 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
     const exists = await ScreenLayout.findOne({
       merchantId: merchant.merchantId,
       screenSlug,
-      layoutId: { $ne: layoutId }
+      layoutId: { $ne: layoutId },
     });
     if (exists) {
       res.status(409).json({
