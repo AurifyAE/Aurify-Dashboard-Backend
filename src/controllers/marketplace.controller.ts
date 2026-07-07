@@ -470,7 +470,7 @@ export const checkScreenSlug = async (req: AuthRequest, res: Response) => {
     if (exists) {
       res.status(200).json({
         success: true,
-        data: { available: false, message: 'This URL is already in use by another screen.' },
+        data: { available: false, message: 'This URL is already in use.' },
       });
       return;
     }
@@ -525,7 +525,7 @@ export const saveLayout = async (req: AuthRequest, res: Response) => {
     if (exists) {
       res.status(409).json({
         success: false,
-        message: 'This URL was just taken. Please choose another slug.',
+        message: 'This URL is already taken by you. Please choose another slug.',
       });
       return;
     }
