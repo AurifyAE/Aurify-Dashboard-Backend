@@ -10,18 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - name: Install Dependencies
+        run: npm ci
 
-      - run: npm run build
+      - name: Verify Build
+        run: npm run build
 
-      - uses: appleboy/scp-action@v0.1.7
+      - name: Upload Project
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -29,23 +34,36 @@ jobs:
           source: "."
           target: "/var/www/Aurify_Dashboard/backend"
 
-      - uses: appleboy/ssh-action@v1.2.0
+      - name: Deploy on Lightsail
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            set -e
+
             cd /var/www/Aurify_Dashboard/backend
-            
-            # Write production environment configuration from GitHub secrets
-            echo "PORT=${{ secrets.PORT }}" > .env
-            echo "NODE_ENV=production" >> .env
-            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
-            echo "CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}" >> .env
-            echo "SCREEN_BASE_URL=${{ secrets.SCREEN_BASE_URL }}" >> .env
+
+            cat > .env <<EOF
+            PORT=${{ secrets.PORT }}
+            NODE_ENV=production
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}
+            SCREEN_BASE_URL=${{ secrets.SCREEN_BASE_URL }}
+            EOF
 
             npm ci
+
             npm run build
-            pm2 restart aurify-backend
+
+            if pm2 describe aurify-backend > /dev/null; then
+              pm2 reload aurify-backend
+            else
+              pm2 start dist/server.js --name aurify-backend
+            fi
+
+            pm2 save
