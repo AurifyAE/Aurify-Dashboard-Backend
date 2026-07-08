@@ -36,9 +36,16 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /var/www/Aurify_Dashboard/backend
+            
+            # Write production environment configuration from GitHub secrets
+            echo "PORT=${{ secrets.PORT }}" > .env
+            echo "NODE_ENV=production" >> .env
+            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+            echo "CORS_ORIGINS=${{ secrets.CORS_ORIGINS }}" >> .env
+            echo "SCREEN_BASE_URL=${{ secrets.SCREEN_BASE_URL }}" >> .env
 
             npm ci
-
             npm run build
-
             pm2 restart aurify-backend
