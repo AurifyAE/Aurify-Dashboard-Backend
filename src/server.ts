@@ -25,7 +25,6 @@ const startServer = async () => {
     });
 
     setupScreenTracker(io);
-
     // Start Express Server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
