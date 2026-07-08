@@ -61,7 +61,7 @@ jobs:
             npm run build
 
             if pm2 describe aurify-backend > /dev/null; then
-              pm2 reload aurify-backend
+              pm2 reload aurify-backend --update-env
             else
               pm2 start dist/server.js --name aurify-backend
             fi
