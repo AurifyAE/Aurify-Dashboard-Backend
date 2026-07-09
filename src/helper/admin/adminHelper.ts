@@ -6,7 +6,6 @@ const defaultCommodities = [
   { symbol: 'Platinum', enabled: true },
   { symbol: 'Copper', enabled: true },
 ];
-
 export const getCommodity = async (userName: string): Promise<any | null> => {
   const user = await User.findOne({ email: userName.toLowerCase() });
   if (!user) return null;
