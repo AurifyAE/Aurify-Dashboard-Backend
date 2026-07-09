@@ -6,7 +6,7 @@ async function upgrade() {
   await mongoose.connect(process.env.MONGO_URI);
   const db = mongoose.connection.collection('users');
 
-  const existingAdmin = await db.findOne({ email: 'admin' });
+  const existingAdmin = await db.findOne({ email: 'admin@gmail.com' });
   if (!existingAdmin) {
     const passwordHash = await bcrypt.hash('admin123', 12);
     await db.insertOne({
@@ -22,7 +22,7 @@ async function upgrade() {
     console.log('Created admin user successfully.');
   } else {
     const passwordHash = await bcrypt.hash('admin123', 12);
-    await db.updateOne({ email: 'admin' }, { $set: { role: 'super_admin', passwordHash } });
+    await db.updateOne({ email: 'admin@gmail.com' }, { $set: { role: 'super_admin', passwordHash } });
     console.log('Admin user already exists. Reset password and role.');
   }
 
