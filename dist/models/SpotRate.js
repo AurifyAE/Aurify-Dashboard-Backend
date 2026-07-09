@@ -34,18 +34,43 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const SpotRateSettingsSchema = new mongoose_1.Schema({
-    userId: {
-        type: String,
+const CommoditySchema = new mongoose_1.Schema({
+    metal: { type: String },
+    purity: { type: Number, default: 0 },
+    unit: { type: Number, default: 0 },
+    weight: { type: String },
+    buyPremium: { type: Number, default: 0 },
+    sellPremium: { type: Number, default: 0 },
+    buyCharge: { type: Number, default: 0 },
+    sellCharge: { type: Number, default: 0 },
+    metal_name: { type: String, default: null },
+    group: { type: String, default: 'commodity' },
+});
+const SpotRateSchema = new mongoose_1.Schema({
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
-        unique: true,
         index: true,
-        trim: true,
+        unique: true,
     },
-    goldBidSpread: { type: Number, default: 0 },
-    goldAskSpread: { type: Number, default: 0.5 },
+    silverAskSpread: { type: Number, default: 0 },
     silverBidSpread: { type: Number, default: 0 },
-    silverAskSpread: { type: Number, default: 0.05 },
-}, { timestamps: true });
-const SpotRateSettings = mongoose_1.default.model('SpotRateSettings', SpotRateSettingsSchema);
-exports.default = SpotRateSettings;
+    goldAskSpread: { type: Number, default: 0 },
+    goldBidSpread: { type: Number, default: 0 },
+    copperAskSpread: { type: Number, default: 0 },
+    copperBidSpread: { type: Number, default: 0 },
+    platinumAskSpread: { type: Number, default: 0 },
+    platinumBidSpread: { type: Number, default: 0 },
+    goldLowMargin: { type: Number, default: 0 },
+    goldHighMargin: { type: Number, default: 0 },
+    silverLowMargin: { type: Number, default: 0 },
+    silverHighMargin: { type: Number, default: 0 },
+    copperLowMargin: { type: Number, default: 0 },
+    copperHighMargin: { type: Number, default: 0 },
+    platinumLowMargin: { type: Number, default: 0 },
+    platinumHighMargin: { type: Number, default: 0 },
+    commodities: [CommoditySchema],
+});
+const SpotRate = mongoose_1.default.model('SpotRate', SpotRateSchema);
+exports.default = SpotRate;

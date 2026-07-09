@@ -33,21 +33,20 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserSpotRateModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const ScreenLayoutSchema = new mongoose_1.Schema({
-    layoutId: { type: String, required: true, unique: true, index: true },
-    merchantId: { type: String, required: true, index: true },
-    name: { type: String, required: true, trim: true },
-    screenSlug: { type: String, required: true, lowercase: true, trim: true, default: 'main' },
-    themeId: { type: String, trim: true },
-    header: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    body: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    sidebar: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    footer: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    widgets: [{ type: String, trim: true }],
-    styles: { type: mongoose_1.Schema.Types.Mixed, default: {} },
-    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
-}, { timestamps: true });
-ScreenLayoutSchema.index({ merchantId: 1, screenSlug: 1 }, { unique: true });
-const ScreenLayout = mongoose_1.default.model('ScreenLayout', ScreenLayoutSchema);
-exports.default = ScreenLayout;
+const CategorySchema = new mongoose_1.Schema({
+    categoryId: { type: String, required: true },
+    commodities: { type: Array, default: [] },
+}, { strict: false });
+const UserSpotRateSchema = new mongoose_1.Schema({
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+    },
+    categories: [CategorySchema],
+});
+exports.UserSpotRateModel = mongoose_1.default.model('UserSpotRate', UserSpotRateSchema);
+exports.default = exports.UserSpotRateModel;

@@ -1,19 +1,18 @@
-'use strict';
-Object.defineProperty(exports, '__esModule', { value: true });
-const express_1 = require('express');
-const marketplace_controller_1 = require('../controllers/marketplace.controller');
-const auth_middleware_1 = require('../middlewares/auth.middleware');
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const marketplace_controller_1 = require("../controllers/marketplace.controller");
+const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 router.get('/live/:merchantSlug', marketplace_controller_1.getLiveScreen);
 router.get('/live/:merchantSlug/:screenSlug', marketplace_controller_1.getLiveScreen);
 router.use(auth_middleware_1.protect);
+router.get('/screens/all', marketplace_controller_1.listAllLiveScreens);
+router.get('/screens/check-slug', marketplace_controller_1.checkScreenSlug);
+router.get('/merchant/check-slug', marketplace_controller_1.checkMerchantSlug);
 router.get('/merchant/me', marketplace_controller_1.getMyMerchant);
 router.post('/merchant/register', marketplace_controller_1.registerMerchant);
-router.patch(
-  '/merchant/:merchantId/status',
-  (0, auth_middleware_1.requireRole)('super_admin', 'admin'),
-  marketplace_controller_1.approveMerchant
-);
+router.patch('/merchant/:merchantId/status', (0, auth_middleware_1.requireRole)('super_admin', 'admin'), marketplace_controller_1.approveMerchant);
 router.get('/profile', marketplace_controller_1.getProfile);
 router.put('/profile', marketplace_controller_1.updateProfile);
 router.get('/themes', marketplace_controller_1.listThemes);
@@ -21,11 +20,14 @@ router.get('/themes/installed', marketplace_controller_1.listMerchantThemes);
 router.post('/themes/:themeId/install', marketplace_controller_1.installTheme);
 router.get('/layouts', marketplace_controller_1.listLayouts);
 router.put('/layouts', marketplace_controller_1.saveLayout);
+router.delete('/layouts/:layoutId', marketplace_controller_1.deleteLayout);
 router.post('/layouts/:layoutId/publish', marketplace_controller_1.publishLayout);
 router.get('/merchant-commodities', marketplace_controller_1.listMerchantCommodities);
 router.post('/merchant-commodities', marketplace_controller_1.upsertMerchantCommodity);
 router.patch('/merchant-commodities/:id', marketplace_controller_1.upsertMerchantCommodity);
+router.delete('/merchant-commodities/:id', marketplace_controller_1.deleteMerchantCommodity);
 router.get('/news', marketplace_controller_1.listNews);
 router.post('/news', marketplace_controller_1.upsertNews);
 router.patch('/news/:id', marketplace_controller_1.upsertNews);
+router.delete('/news/:id', marketplace_controller_1.deleteNews);
 exports.default = router;
