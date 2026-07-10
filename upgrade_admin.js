@@ -22,7 +22,10 @@ async function upgrade() {
     console.log('Created admin user successfully.');
   } else {
     const passwordHash = await bcrypt.hash('admin123', 12);
-    await db.updateOne({ email: 'admin@gmail.com' }, { $set: { role: 'super_admin', passwordHash } });
+    await db.updateOne(
+      { email: 'admin@gmail.com' },
+      { $set: { role: 'super_admin', passwordHash } }
+    );
     console.log('Admin user already exists. Reset password and role.');
   }
 

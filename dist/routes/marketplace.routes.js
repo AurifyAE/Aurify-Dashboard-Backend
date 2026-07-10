@@ -1,8 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const marketplace_controller_1 = require("../controllers/marketplace.controller");
-const auth_middleware_1 = require("../middlewares/auth.middleware");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const express_1 = require('express');
+const marketplace_controller_1 = require('../controllers/marketplace.controller');
+const auth_middleware_1 = require('../middlewares/auth.middleware');
 const router = (0, express_1.Router)();
 router.get('/live/:merchantSlug', marketplace_controller_1.getLiveScreen);
 router.get('/live/:merchantSlug/:screenSlug', marketplace_controller_1.getLiveScreen);
@@ -12,7 +12,11 @@ router.get('/screens/check-slug', marketplace_controller_1.checkScreenSlug);
 router.get('/merchant/check-slug', marketplace_controller_1.checkMerchantSlug);
 router.get('/merchant/me', marketplace_controller_1.getMyMerchant);
 router.post('/merchant/register', marketplace_controller_1.registerMerchant);
-router.patch('/merchant/:merchantId/status', (0, auth_middleware_1.requireRole)('super_admin', 'admin'), marketplace_controller_1.approveMerchant);
+router.patch(
+  '/merchant/:merchantId/status',
+  (0, auth_middleware_1.requireRole)('super_admin', 'admin'),
+  marketplace_controller_1.approveMerchant
+);
 router.get('/profile', marketplace_controller_1.getProfile);
 router.put('/profile', marketplace_controller_1.updateProfile);
 router.get('/themes', marketplace_controller_1.listThemes);
