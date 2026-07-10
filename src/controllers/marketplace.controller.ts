@@ -11,6 +11,7 @@ import MerchantNews from '../models/MerchantNews';
 import { PublishedLayoutVersion, ScreenRecord } from '../models/PublishedScreen';
 import SpotRateSettings from '../models/SpotRateSettings';
 import SpotRate from '../models/SpotRate';
+import { emitBusinessEvent, NotificationEvents } from '../helper/eventBus';
 
 const SCREEN_BASE_URL = process.env.SCREEN_BASE_URL || 'https://screen.aurify.ae';
 
@@ -179,6 +180,27 @@ export const approveMerchant = async (req: AuthRequest, res: Response) => {
       res.status(404).json({ success: false, message: 'Merchant not found' });
       return;
     }
+
+    const actor = {
+      id: req.user?.id || 'system',
+      name: req.user?.companyName || 'Admin',
+      type: 'admin' as const,
+    };
+
+    if (status === 'Active') {
+      emitBusinessEvent(NotificationEvents.MERCHANT_APPROVED, {
+        merchantId,
+        actorName: actor.name,
+        actor,
+      });
+    } else if (status === 'Suspended') {
+      emitBusinessEvent(NotificationEvents.MERCHANT_REJECTED, {
+        merchantId,
+        actorName: actor.name,
+        actor,
+      });
+    }
+
     res.status(200).json({ success: true, data: merchant });
   } catch (err) {
     console.error('approveMerchant:', err);
@@ -359,6 +381,19 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true, runValidators: true }
     );
     const updatedMerchant = await Merchant.findOne({ merchantId: merchant.merchantId });
+
+    const actor = {
+      id: req.user?.id || 'system',
+      name: merchant.companyName || 'User',
+      type: 'user' as const,
+    };
+
+    emitBusinessEvent(NotificationEvents.PROFILE_UPDATED, {
+      merchantId: merchant.merchantId,
+      actorName: actor.name,
+      actor,
+    });
+
     res.status(200).json({ success: true, data: { merchant: updatedMerchant, profile } });
   } catch (err) {
     console.error('updateProfile:', err);
@@ -642,6 +677,8 @@ export const deleteLayout = async (req: AuthRequest, res: Response) => {
     }
     const { layoutId } = req.params;
 
+    const layout = await ScreenLayout.findOne({ layoutId, merchantId: merchant.merchantId }).lean();
+
     // Delete from ScreenLayout
     await ScreenLayout.deleteOne({ layoutId, merchantId: merchant.merchantId });
 
@@ -651,6 +688,21 @@ export const deleteLayout = async (req: AuthRequest, res: Response) => {
       { layoutId, merchantId: merchant.merchantId },
       { $set: { live: false, layoutId: null, themeId: null, liveUrl: null } }
     );
+
+    if (layout) {
+      const actor = {
+        id: req.user?.id || 'system',
+        name: merchant.companyName || 'User',
+        type: 'user' as const,
+      };
+
+      emitBusinessEvent(NotificationEvents.LAYOUT_UNPUBLISHED, {
+        merchantId: merchant.merchantId,
+        actorName: actor.name,
+        layoutName: layout.name,
+        actor,
+      });
+    }
 
     res.status(200).json({ success: true, message: 'Layout deleted successfully' });
   } catch (err) {
@@ -718,6 +770,19 @@ export const publishLayout = async (req: AuthRequest, res: Response) => {
     console.log('screenUpdated', {
       merchantId: merchant.merchantId,
       screenId: screen._id.toString(),
+    });
+
+    const actor = {
+      id: req.user?.id || 'system',
+      name: merchant.companyName || 'User',
+      type: 'user' as const,
+    };
+
+    emitBusinessEvent(NotificationEvents.LAYOUT_PUBLISHED, {
+      merchantId: merchant.merchantId,
+      actorName: actor.name,
+      layoutName: layout.name,
+      actor,
     });
 
     res.status(200).json({ success: true, data: { published, screen, liveUrl } });
