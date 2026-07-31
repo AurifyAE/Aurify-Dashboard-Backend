@@ -202,6 +202,27 @@ export const clearAllReadNotifications = async (req: AuthRequest, res: Response)
   }
 };
 
+// PATCH /api/notifications/clear-all
+export const clearAllNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    const merchantId = await getMerchantId(req);
+    if (!merchantId) {
+      res.status(404).json({ success: false, message: 'Merchant not found' });
+      return;
+    }
+
+    await Notification.updateMany(
+      { merchantId, clearedAt: null },
+      { $set: { clearedAt: new Date() } }
+    );
+
+    res.status(200).json({ success: true, message: 'Cleared all notifications', data: { unread: 0 } });
+  } catch (err) {
+    console.error('clearAllNotifications error:', err);
+    res.status(500).json({ success: false, message: 'Failed to clear notifications' });
+  }
+};
+
 // PATCH /api/notifications/clear-selected
 export const clearSelectedNotifications = async (req: AuthRequest, res: Response) => {
   try {

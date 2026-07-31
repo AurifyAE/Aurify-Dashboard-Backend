@@ -6,6 +6,7 @@ import {
   readAllNotifications,
   clearNotification,
   clearAllReadNotifications,
+  clearAllNotifications,
   clearSelectedNotifications,
   deleteNotification,
 } from '../controllers/notification.controller';
@@ -19,6 +20,7 @@ router.use(protect);
 router.get('/', getNotifications);
 router.get('/unread-count', getUnreadCount);
 router.patch('/read-all', readAllNotifications);
+router.patch('/clear-all', clearAllNotifications);
 router.patch('/clear-all-read', clearAllReadNotifications);
 router.patch('/clear-selected', clearSelectedNotifications);
 router.patch('/:id/read', markAsRead);
