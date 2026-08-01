@@ -5,6 +5,7 @@ import dns from 'node:dns';
 import http from 'http';
 import { Server } from 'socket.io';
 import { setupScreenTracker } from './sockets/screenTracker.socket';
+import { setIoInstance } from './sockets/socketService';
 
 dotenv.config();
 
@@ -24,7 +25,10 @@ const startServer = async () => {
       },
     });
 
+    setIoInstance(io);
     setupScreenTracker(io);
+    // Boot up the notification event handlers
+    await import('./helper/notificationHandler');
     // Start Express Server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

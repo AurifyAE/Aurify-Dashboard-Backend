@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import Merchant from '../models/Merchant';
 import User from '../models/User';
 import bcrypt from 'bcryptjs';
+import { AuthRequest } from '../middlewares/auth.middleware';
+import { emitBusinessEvent, NotificationEvents } from '../helper/eventBus';
 
 // Fetch all merchants for Admin Dashboard
 export const getMerchants = async (req: Request, res: Response) => {
@@ -17,6 +19,7 @@ export const getMerchants = async (req: Request, res: Response) => {
 // Update merchant details (status, limits, service end date)
 export const updateMerchant = async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     const {
       status,
@@ -27,6 +30,12 @@ export const updateMerchant = async (req: Request, res: Response) => {
       additionalFeatures,
       allowedCommodities,
     } = req.body;
+
+    const merchantBefore = await Merchant.findById(id).lean();
+    if (!merchantBefore) {
+      res.status(404).json({ success: false, message: 'Merchant not found' });
+      return;
+    }
 
     const updatedMerchant = await Merchant.findByIdAndUpdate(
       id,
@@ -47,6 +56,65 @@ export const updateMerchant = async (req: Request, res: Response) => {
     if (!updatedMerchant) {
       res.status(404).json({ success: false, message: 'Merchant not found' });
       return;
+    }
+
+    const actor = {
+      id: authReq.user?.id || 'system',
+      name: authReq.user?.companyName || 'Admin',
+      type: 'admin' as const,
+    };
+
+    // --- Dispatch Business Events ---
+    // 1. Status Update
+    if (status && status !== merchantBefore.status) {
+      if (status === 'Active') {
+        emitBusinessEvent(NotificationEvents.MERCHANT_APPROVED, {
+          merchantId: updatedMerchant.merchantId,
+          actorName: actor.name,
+          actor,
+        });
+      } else if (status === 'Suspended') {
+        emitBusinessEvent(NotificationEvents.MERCHANT_REJECTED, {
+          merchantId: updatedMerchant.merchantId,
+          actorName: actor.name,
+          actor,
+        });
+      }
+    }
+
+    // 2. Limit Enforcement Updates
+    if (
+      (maxScreens !== undefined && maxScreens !== merchantBefore.maxScreens) ||
+      (maxDevices !== undefined && maxDevices !== merchantBefore.maxDevices)
+    ) {
+      emitBusinessEvent(NotificationEvents.LIMITS_UPDATED, {
+        merchantId: updatedMerchant.merchantId,
+        actorName: actor.name,
+        maxScreens: updatedMerchant.maxScreens,
+        maxDevices: updatedMerchant.maxDevices,
+        actor,
+      });
+    }
+
+    // 3. Allowed Commodities Update
+    if (
+      allowedCommodities &&
+      JSON.stringify(allowedCommodities) !== JSON.stringify(merchantBefore.allowedCommodities)
+    ) {
+      emitBusinessEvent(NotificationEvents.COMMODITY_CONFIG_CHANGED, {
+        merchantId: updatedMerchant.merchantId,
+        actorName: actor.name,
+        actor,
+      });
+    }
+
+    // 4. General Subscription / Package Update
+    if (serviceEndDate || services || additionalFeatures) {
+      emitBusinessEvent(NotificationEvents.SUBSCRIPTION_UPDATED, {
+        merchantId: updatedMerchant.merchantId,
+        actorName: actor.name,
+        actor,
+      });
     }
 
     res.status(200).json({ success: true, data: updatedMerchant });
@@ -84,6 +152,7 @@ export const deleteMerchant = async (req: Request, res: Response) => {
 // Reset user's password directly from admin panel
 export const adminResetPassword = async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     const { newPassword } = req.body;
 
@@ -102,6 +171,18 @@ export const adminResetPassword = async (req: Request, res: Response) => {
 
     await User.findByIdAndUpdate(merchant.userId, {
       $set: { passwordHash },
+    });
+
+    const actor = {
+      id: authReq.user?.id || 'system',
+      name: authReq.user?.companyName || 'Admin',
+      type: 'admin' as const,
+    };
+
+    emitBusinessEvent(NotificationEvents.PASSWORD_CHANGED, {
+      merchantId: merchant.merchantId,
+      actorName: actor.name,
+      actor,
     });
 
     res.status(200).json({ success: true, message: 'Password reset successfully' });

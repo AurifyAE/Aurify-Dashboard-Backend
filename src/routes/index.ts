@@ -5,6 +5,7 @@ import templateRoutes from './templates.routes';
 import marketplaceRoutes from './marketplace.routes';
 import spotrateLegacyRoutes from './spotrateLegacy.routes';
 import adminRoutes from './admin.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
@@ -17,6 +18,7 @@ router.use('/spotrate', spotrateRoutes);
 router.use('/templates', templateRoutes);
 router.use('/marketplace', marketplaceRoutes);
 router.use('/admin', adminRoutes);
+router.use('/notifications', notificationRoutes);
 router.use('/', spotrateLegacyRoutes);
 
 export default router;
