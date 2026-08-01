@@ -23,9 +23,17 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
     const category = req.query.category as string;
     const unreadOnly = req.query.unread === 'true';
 
+    // Auto-delete read notifications that are older than 90 days after being read
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    await Notification.deleteMany({
+      merchantId,
+      readAt: { $ne: null, $lt: ninetyDaysAgo },
+    });
+
     const filter: Record<string, any> = {
       merchantId,
       clearedAt: null,
+      $or: [{ readAt: null }, { readAt: { $gte: ninetyDaysAgo } }],
     };
 
     if (category) {
