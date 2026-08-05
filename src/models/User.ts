@@ -11,6 +11,9 @@ export interface IUser extends Document {
   passwordHash: string;
   role: UserRole;
   status: UserStatus;
+  // Account lockout tracking
+  loginAttempts: number;
+  lockUntil?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -46,6 +49,13 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: ['active', 'inactive', 'suspended'],
       default: 'active',
+    },
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
     },
   },
   { timestamps: true }
