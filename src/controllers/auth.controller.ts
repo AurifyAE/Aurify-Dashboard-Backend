@@ -302,21 +302,37 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
   try {
     const rawRefresh = req.cookies?.aurify_refresh;
     if (rawRefresh) {
-      await revokeSession(rawRefresh);
+      try {
+        await revokeSession(rawRefresh);
+      } catch (sessionErr) {
+        console.warn('[auth.controller] Error revoking session in DB:', sessionErr);
+      }
     }
     const authReq = req as Request & { user?: { id: string; email?: string } };
-    logAudit('LOGOUT', {
-      userId: authReq.user?.id,
-      email: authReq.user?.email,
-      ipAddress: req.ip,
-    });
+    if (authReq.user?.id) {
+      try {
+        logAudit('LOGOUT', {
+          userId: authReq.user?.id,
+          email: authReq.user?.email,
+          ipAddress: req.ip,
+        });
+      } catch (auditErr) {
+        console.warn('[auth.controller] Error logging audit during logout:', auditErr);
+      }
+    }
     res
+      .clearCookie('aurify_token', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
+      .clearCookie('aurify_refresh', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
       .clearCookie('aurify_token')
       .clearCookie('aurify_refresh')
       .status(200)
       .json({ success: true, message: 'Logged out successfully.' });
   } catch (err) {
-    next(err);
+    res
+      .clearCookie('aurify_token')
+      .clearCookie('aurify_refresh')
+      .status(200)
+      .json({ success: true, message: 'Logged out.' });
   }
 };
 
