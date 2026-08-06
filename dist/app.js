@@ -36,11 +36,10 @@ app.use((0, cors_1.default)({
 }));
 // ─── Cookie parser ───────────────────────────────────────────────────────────
 app.use((0, cookie_parser_1.default)());
-// ─── Body parsers — reduced limits to prevent DoS via large payloads ─────────
-// Individual upload routes that genuinely need larger bodies should override
-// with their own limit via multer or a scoped middleware.
-app.use(express_1.default.json({ limit: '2mb' }));
-app.use(express_1.default.urlencoded({ extended: true, limit: '2mb' }));
+// ─── Body parsers ─────────────────────────────────────────────────────────────
+// Generous limit to accommodate high-resolution TV wallpapers & screen builder assets
+app.use(express_1.default.json({ limit: '50mb' }));
+app.use(express_1.default.urlencoded({ extended: true, limit: '50mb' }));
 // ─── NoSQL Injection Protection ──────────────────────────────────────────────
 // express-mongo-sanitize is incompatible with Express 5 (req.query is read-only).
 // We implement an equivalent sanitizer that targets only req.body and req.params,
