@@ -38,18 +38,33 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireRole = exports.optionalAuth = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+// ─── Token Extraction Helper ─────────────────────────────────────────────────
+/**
+ * Extracts the JWT from:
+ * 1. HttpOnly cookie `aurify_token` (primary — secure storage)
+ * 2. Authorization: Bearer <token> header (fallback — backward compat during migration)
+ */
+const extractToken = (req) => {
+    // Primary: HttpOnly cookie
+    if (req.cookies?.aurify_token)
+        return req.cookies.aurify_token;
+    // Fallback: Authorization header (legacy / API clients)
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer '))
+        return authHeader.split(' ')[1];
+    return null;
+};
 // ─── PROTECT MIDDLEWARE ───────────────────────────────────────────────────────
 const protect = async (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = extractToken(req);
+        if (!token) {
             res.status(401).json({
                 success: false,
                 message: 'Access denied. No token provided.',
             });
             return;
         }
-        const token = authHeader.split(' ')[1];
         const secret = process.env.JWT_SECRET;
         const decoded = jsonwebtoken_1.default.verify(token, secret);
         const { default: User } = await Promise.resolve().then(() => __importStar(require('../models/User')));
@@ -79,15 +94,14 @@ const protect = async (req, res, next) => {
     }
 };
 exports.protect = protect;
-// ─── OPTIONAL AUTH: set req.user if valid token, never reject ──────────────
+// ─── OPTIONAL AUTH: set req.user if valid token, never reject ─────────────────
 const optionalAuth = (req, res, next) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = extractToken(req);
+        if (!token) {
             next();
             return;
         }
-        const token = authHeader.split(' ')[1];
         const secret = process.env.JWT_SECRET;
         const decoded = jsonwebtoken_1.default.verify(token, secret);
         req.user = decoded;
@@ -98,7 +112,7 @@ const optionalAuth = (req, res, next) => {
     next();
 };
 exports.optionalAuth = optionalAuth;
-// ─── ROLE GUARD MIDDLEWARE ─────────────────────────────────────────────────
+// ─── ROLE GUARD MIDDLEWARE ────────────────────────────────────────────────────
 const requireRole = (...roles) => {
     return (req, res, next) => {
         const authReq = req;

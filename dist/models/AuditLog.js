@@ -32,55 +32,34 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const UserSchema = new mongoose_1.Schema({
-    companyName: {
-        type: String,
-        required: [true, 'Company name is required'],
-        trim: true,
-    },
-    email: {
-        type: String,
-        required: [true, 'Email is required'],
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
-    },
-    phone: {
-        type: String,
-        trim: true,
-    },
-    passwordHash: {
+const AuditLogSchema = new mongoose_1.Schema({
+    userId: { type: String, index: true },
+    email: { type: String },
+    action: {
         type: String,
         required: true,
+        enum: [
+            'LOGIN',
+            'LOGOUT',
+            'LOGOUT_ALL',
+            'REGISTER',
+            'PASSWORD_CHANGE',
+            'PROFILE_UPDATE',
+            'ROLE_UPDATE',
+            'MERCHANT_APPROVAL',
+            'USER_SUSPENDED',
+            'USER_ACTIVATED',
+            'USER_DELETED',
+            'SETTINGS_UPDATE',
+        ],
     },
-    role: {
-        type: String,
-        enum: ['super_admin', 'admin', 'user'],
-        default: 'user',
-    },
-    status: {
-        type: String,
-        enum: ['active', 'inactive', 'suspended'],
-        default: 'active',
-    },
-    loginAttempts: {
-        type: Number,
-        default: 0,
-    },
-    lockUntil: {
-        type: Date,
-    },
+    ipAddress: { type: String },
+    userAgent: { type: String },
+    metadata: { type: mongoose_1.Schema.Types.Mixed },
 }, { timestamps: true });
-// Method to compare plain password with hash
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-    return bcryptjs_1.default.compare(candidatePassword, this.passwordHash);
-};
-const User = mongoose_1.default.model('User', UserSchema);
-exports.default = User;
+// ─── TTL: auto-delete after 1 year ───────────────────────────────────────────
+AuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 365 });
+const AuditLog = mongoose_1.default.model('AuditLog', AuditLogSchema);
+exports.default = AuditLog;

@@ -32,55 +32,37 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const UserSchema = new mongoose_1.Schema({
-    companyName: {
+const SessionSchema = new mongoose_1.Schema({
+    userId: {
         type: String,
-        required: [true, 'Company name is required'],
-        trim: true,
+        required: true,
+        index: true,
     },
-    email: {
-        type: String,
-        required: [true, 'Email is required'],
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
-    },
-    phone: {
-        type: String,
-        trim: true,
-    },
-    passwordHash: {
+    refreshTokenHash: {
         type: String,
         required: true,
     },
-    role: {
+    userAgent: {
         type: String,
-        enum: ['super_admin', 'admin', 'user'],
-        default: 'user',
     },
-    status: {
+    ipAddress: {
         type: String,
-        enum: ['active', 'inactive', 'suspended'],
-        default: 'active',
     },
-    loginAttempts: {
-        type: Number,
-        default: 0,
+    isRevoked: {
+        type: Boolean,
+        default: false,
     },
-    lockUntil: {
+    expiresAt: {
         type: Date,
+        required: true,
+        index: { expireAfterSeconds: 0 }, // MongoDB TTL — auto-delete after expiresAt
+    },
+    lastUsed: {
+        type: Date,
+        default: Date.now,
     },
 }, { timestamps: true });
-// Method to compare plain password with hash
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-    return bcryptjs_1.default.compare(candidatePassword, this.passwordHash);
-};
-const User = mongoose_1.default.model('User', UserSchema);
-exports.default = User;
+const Session = mongoose_1.default.model('Session', SessionSchema);
+exports.default = Session;

@@ -12,11 +12,28 @@ export interface AuthRequest extends Request {
   };
 }
 
+// ─── Token Extraction Helper ─────────────────────────────────────────────────
+/**
+ * Extracts the JWT from:
+ * 1. HttpOnly cookie `aurify_token` (primary — secure storage)
+ * 2. Authorization: Bearer <token> header (fallback — backward compat during migration)
+ */
+const extractToken = (req: Request): string | null => {
+  // Primary: HttpOnly cookie
+  if (req.cookies?.aurify_token) return req.cookies.aurify_token as string;
+
+  // Fallback: Authorization header (legacy / API clients)
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.split(' ')[1];
+
+  return null;
+};
+
 // ─── PROTECT MIDDLEWARE ───────────────────────────────────────────────────────
 export const protect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractToken(req);
+    if (!token) {
       res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.',
@@ -24,7 +41,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    const token = authHeader.split(' ')[1];
     const secret = process.env.JWT_SECRET as string;
     const decoded = jwt.verify(token, secret) as {
       id: string;
@@ -60,15 +76,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
-// ─── OPTIONAL AUTH: set req.user if valid token, never reject ──────────────
+// ─── OPTIONAL AUTH: set req.user if valid token, never reject ─────────────────
 export const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractToken(req);
+    if (!token) {
       next();
       return;
     }
-    const token = authHeader.split(' ')[1];
     const secret = process.env.JWT_SECRET as string;
     const decoded = jwt.verify(token, secret) as {
       id: string;
@@ -83,7 +98,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
   next();
 };
 
-// ─── ROLE GUARD MIDDLEWARE ─────────────────────────────────────────────────
+// ─── ROLE GUARD MIDDLEWARE ────────────────────────────────────────────────────
 export const requireRole = (...roles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const authReq = req as AuthRequest;
