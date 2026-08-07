@@ -48,7 +48,9 @@ async function handleNotificationEvent(event: string, payload: any) {
       // Push timestamp update to bubble it up to top of Today list
       existingNotif.createdAt = new Date();
       notification = await existingNotif.save();
-      console.log(`[NotificationHandler] Deduplicated & updated existing unread notification: ${notification._id}`);
+      console.log(
+        `[NotificationHandler] Deduplicated & updated existing unread notification: ${notification._id}`
+      );
     } else {
       // Create new notification document
       notification = await Notification.create({
@@ -94,7 +96,9 @@ async function handleNotificationEvent(event: string, payload: any) {
       });
       console.log(`[NotificationHandler] Emitted notification:new event to room: ${room}`);
     } else {
-      console.log(`[NotificationHandler] Socket server reference not set; could not emit notification:new in real-time`);
+      console.log(
+        `[NotificationHandler] Socket server reference not set; could not emit notification:new in real-time`
+      );
     }
   } catch (err) {
     console.error(`[NotificationHandler] Failed to handle notification event: ${event}`, err);

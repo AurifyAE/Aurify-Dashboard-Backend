@@ -224,7 +224,9 @@ export const clearAllNotifications = async (req: AuthRequest, res: Response) => 
       { $set: { clearedAt: new Date() } }
     );
 
-    res.status(200).json({ success: true, message: 'Cleared all notifications', data: { unread: 0 } });
+    res
+      .status(200)
+      .json({ success: true, message: 'Cleared all notifications', data: { unread: 0 } });
   } catch (err) {
     console.error('clearAllNotifications error:', err);
     res.status(500).json({ success: false, message: 'Failed to clear notifications' });

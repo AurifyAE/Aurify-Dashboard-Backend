@@ -17,7 +17,7 @@ export const NotificationEvents = {
   LIMITS_UPDATED: 'merchant.limits.updated',
 } as const;
 
-export type NotificationEvent = typeof NotificationEvents[keyof typeof NotificationEvents];
+export type NotificationEvent = (typeof NotificationEvents)[keyof typeof NotificationEvents];
 
 class EventBus {
   private handlers: Map<string, Function[]> = new Map();

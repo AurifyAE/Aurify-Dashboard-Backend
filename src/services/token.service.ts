@@ -28,8 +28,7 @@ export const issueAccessToken = (payload: TokenPayload): string => {
 };
 
 /** Issue a long-lived refresh token (7 days) as an opaque random value */
-export const issueRefreshToken = (): string =>
-  crypto.randomBytes(64).toString('hex');
+export const issueRefreshToken = (): string => crypto.randomBytes(64).toString('hex');
 
 // ─── Token Pair Generation & Session Persistence ─────────────────────────────
 
@@ -96,10 +95,7 @@ export const rotateRefreshToken = async (
 
 /** Revoke a single session by its refresh token hash */
 export const revokeSession = async (rawRefreshToken: string): Promise<void> => {
-  await Session.updateOne(
-    { refreshTokenHash: hashToken(rawRefreshToken) },
-    { isRevoked: true }
-  );
+  await Session.updateOne({ refreshTokenHash: hashToken(rawRefreshToken) }, { isRevoked: true });
 };
 
 /** Revoke all active sessions for a user (logout everywhere) */

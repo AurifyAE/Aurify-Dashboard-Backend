@@ -7,7 +7,8 @@ export interface INotification extends Document {
   type: 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR';
   priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
   category: 'APPROVAL' | 'ADMIN' | 'SYSTEM' | 'FEATURE' | 'SECURITY' | 'BILLING' | 'WARNING';
-  sourceModule: 'MARKETPLACE' | 'SCREEN_BUILDER' | 'THEME' | 'BILLING' | 'ADMIN' | 'AUTH' | 'ANALYTICS';
+  sourceModule:
+    'MARKETPLACE' | 'SCREEN_BUILDER' | 'THEME' | 'BILLING' | 'ADMIN' | 'AUTH' | 'ANALYTICS';
   version: number;
   silent: boolean;
   isPinned: boolean;

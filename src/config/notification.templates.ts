@@ -5,7 +5,8 @@ export interface TemplatePayload {
   message: string;
   type: 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR';
   category: 'APPROVAL' | 'ADMIN' | 'SYSTEM' | 'FEATURE' | 'SECURITY' | 'BILLING' | 'WARNING';
-  sourceModule: 'MARKETPLACE' | 'SCREEN_BUILDER' | 'THEME' | 'BILLING' | 'ADMIN' | 'AUTH' | 'ANALYTICS';
+  sourceModule:
+    'MARKETPLACE' | 'SCREEN_BUILDER' | 'THEME' | 'BILLING' | 'ADMIN' | 'AUTH' | 'ANALYTICS';
   iconKey: string;
   actions: { label: string; url: string }[];
   isPinned?: boolean;
@@ -39,7 +40,10 @@ export const NotificationTemplates = {
     isPinned: true,
   }),
 
-  [NotificationEvents.SUBSCRIPTION_UPDATED]: (payload: { actorName: string; planName?: string }): TemplatePayload => ({
+  [NotificationEvents.SUBSCRIPTION_UPDATED]: (payload: {
+    actorName: string;
+    planName?: string;
+  }): TemplatePayload => ({
     title: 'Subscription Updated',
     message: `Your subscription was updated by admin ${payload.actorName}${payload.planName ? ` to plan "${payload.planName}"` : ''}.`,
     type: 'SUCCESS',
@@ -50,7 +54,11 @@ export const NotificationTemplates = {
   }),
 
   // --- Limits Management ---
-  [NotificationEvents.LIMITS_UPDATED]: (payload: { actorName: string; maxScreens: number; maxDevices: number }): TemplatePayload => ({
+  [NotificationEvents.LIMITS_UPDATED]: (payload: {
+    actorName: string;
+    maxScreens: number;
+    maxDevices: number;
+  }): TemplatePayload => ({
     title: 'Limits Updated By Admin',
     message: `Admin ${payload.actorName} changed your account limits: Max Screens set to ${payload.maxScreens}, Max Devices set to ${payload.maxDevices}.`,
     type: 'INFO',
@@ -61,7 +69,10 @@ export const NotificationTemplates = {
   }),
 
   // --- Layout Publishing ---
-  [NotificationEvents.LAYOUT_PUBLISHED]: (payload: { actorName: string; layoutName: string }): TemplatePayload => ({
+  [NotificationEvents.LAYOUT_PUBLISHED]: (payload: {
+    actorName: string;
+    layoutName: string;
+  }): TemplatePayload => ({
     title: 'Screen Layout Published',
     message: `Layout "${payload.layoutName}" has been successfully published to screens by ${payload.actorName}.`,
     type: 'SUCCESS',
@@ -71,7 +82,10 @@ export const NotificationTemplates = {
     actions: [{ label: 'View Screens', url: '/dashboard/screen-builder' }],
   }),
 
-  [NotificationEvents.LAYOUT_UNPUBLISHED]: (payload: { actorName: string; layoutName: string }): TemplatePayload => ({
+  [NotificationEvents.LAYOUT_UNPUBLISHED]: (payload: {
+    actorName: string;
+    layoutName: string;
+  }): TemplatePayload => ({
     title: 'Layout Unpublished',
     message: `Layout "${payload.layoutName}" was unpublished by ${payload.actorName}.`,
     type: 'WARNING',
@@ -82,7 +96,9 @@ export const NotificationTemplates = {
   }),
 
   // --- Spot Rate Commodities ---
-  [NotificationEvents.COMMODITY_CONFIG_CHANGED]: (payload: { actorName: string }): TemplatePayload => ({
+  [NotificationEvents.COMMODITY_CONFIG_CHANGED]: (payload: {
+    actorName: string;
+  }): TemplatePayload => ({
     title: 'Commodity Config Changed',
     message: `Your allowed commodities configuration was updated by admin ${payload.actorName}.`,
     type: 'INFO',
