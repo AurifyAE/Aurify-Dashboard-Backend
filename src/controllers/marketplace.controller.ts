@@ -381,6 +381,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true, runValidators: true }
     );
     const updatedMerchant = await Merchant.findOne({ merchantId: merchant.merchantId });
+    const spotRateDoc = await SpotRate.findOne({ createdBy: merchant.userId }).lean();
+    const merchantData = updatedMerchant
+      ? { ...updatedMerchant.toObject(), commodities: spotRateDoc?.commodities || [] }
+      : null;
 
     const actor = {
       id: req.user?.id || 'system',
@@ -394,7 +398,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       actor,
     });
 
-    res.status(200).json({ success: true, data: { merchant: updatedMerchant, profile } });
+    res.status(200).json({ success: true, data: { merchant: merchantData, profile } });
   } catch (err) {
     console.error('updateProfile:', err);
     res.status(500).json({ success: false, message: 'Failed to update profile' });
