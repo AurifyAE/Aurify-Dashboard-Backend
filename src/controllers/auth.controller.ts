@@ -19,6 +19,7 @@ import {
   issueAccessToken,
 } from '../services/token.service';
 import { logAudit, logSecurity } from '../services/audit.service';
+import { emitBusinessEvent, NotificationEvents } from '../helper/eventBus';
 
 const slugify = (value: string) =>
   value
@@ -455,6 +456,17 @@ export const updateProfile = async (
       userId: user._id.toString(),
       email: user.email,
       ipAddress: req.ip,
+    });
+
+    emitBusinessEvent(NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED, {
+      companyName: user.companyName || 'Merchant',
+      actorName: user.companyName || 'User',
+      actor: {
+        id: user._id.toString(),
+        name: user.companyName || 'User',
+        type: 'user',
+      },
+      metadata: { userId: user._id.toString() },
     });
 
     // Re-issue fresh access token

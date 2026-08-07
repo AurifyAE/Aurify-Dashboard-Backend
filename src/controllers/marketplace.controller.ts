@@ -165,7 +165,7 @@ export const registerMerchant = async (req: AuthRequest, res: Response) => {
 
 export const approveMerchant = async (req: AuthRequest, res: Response) => {
   try {
-    const { merchantId } = req.params;
+    const merchantId = String(req.params.merchantId);
     const { status } = req.body;
     if (!['Pending', 'Active', 'Suspended'].includes(status)) {
       res.status(400).json({ success: false, message: 'Invalid merchant status' });
@@ -396,6 +396,13 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       merchantId: merchant.merchantId,
       actorName: actor.name,
       actor,
+    });
+
+    emitBusinessEvent(NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED, {
+      companyName: updatedMerchant?.companyName || merchant.companyName || 'Merchant',
+      actorName: actor.name,
+      actor,
+      metadata: { merchantId: merchant.merchantId },
     });
 
     res.status(200).json({ success: true, data: { merchant: merchantData, profile } });

@@ -12,7 +12,8 @@ export type AuditAction =
   | 'USER_SUSPENDED'
   | 'USER_ACTIVATED'
   | 'USER_DELETED'
-  | 'SETTINGS_UPDATE';
+  | 'SETTINGS_UPDATE'
+  | 'NOTIFICATION_DISPATCHED';
 
 export interface IAuditLog extends Document {
   userId?: string;
@@ -44,6 +45,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
         'USER_ACTIVATED',
         'USER_DELETED',
         'SETTINGS_UPDATE',
+        'NOTIFICATION_DISPATCHED',
       ],
     },
     ipAddress: { type: String },
