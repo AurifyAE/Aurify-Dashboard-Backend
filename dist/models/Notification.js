@@ -35,7 +35,20 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const NotificationSchema = new mongoose_1.Schema({
+    recipientUserId: { type: String, required: true, index: true },
     merchantId: { type: String, required: true, index: true },
+    eventId: { type: String, required: true },
+    dedupeKey: { type: String, required: true, index: true },
+    dedupeStrategy: {
+        type: String,
+        enum: ['NONE', 'ACTIVE_WINDOW', 'REPLACE_ACTIVE', 'GROUP'],
+        default: 'REPLACE_ACTIVE',
+    },
+    broadcastScope: {
+        type: String,
+        enum: ['USER', 'MERCHANT'],
+        default: 'USER',
+    },
     title: { type: String, required: true },
     message: { type: String, required: true },
     type: { type: String, enum: ['SUCCESS', 'INFO', 'WARNING', 'ERROR'], default: 'INFO' },
@@ -47,7 +60,16 @@ const NotificationSchema = new mongoose_1.Schema({
     },
     sourceModule: {
         type: String,
-        enum: ['MARKETPLACE', 'SCREEN_BUILDER', 'THEME', 'BILLING', 'ADMIN', 'AUTH', 'ANALYTICS'],
+        enum: [
+            'MARKETPLACE',
+            'SCREEN_BUILDER',
+            'THEME',
+            'BILLING',
+            'ADMIN',
+            'AUTH',
+            'ANALYTICS',
+            'SYSTEM',
+        ],
         required: true,
     },
     version: { type: Number, default: 1 },
@@ -65,19 +87,41 @@ const NotificationSchema = new mongoose_1.Schema({
             url: { type: String, required: true },
         },
     ],
-    delivery: {
-        dashboard: { type: Boolean, default: true },
+    channels: {
+        inApp: { type: Boolean, default: true },
+        socket: { type: Boolean, default: true },
         email: { type: Boolean, default: false },
-        push: { type: Boolean, default: false },
+    },
+    notificationStatus: {
+        type: String,
+        enum: ['ACTIVE', 'CLEARED'],
+        default: 'ACTIVE',
+        index: true,
     },
     readAt: { type: Date, default: null },
     clearedAt: { type: Date, default: null },
+    supersededAt: { type: Date, default: null },
+    supersededBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Notification', default: null },
+    deliveryStatus: {
+        type: String,
+        enum: ['PERSISTED', 'SOCKET_DELIVERED', 'SOCKET_FAILED'],
+        default: 'PERSISTED',
+        index: true,
+    },
+    deliveryAttempts: { type: Number, default: 0 },
+    lastDeliveryAttemptAt: { type: Date, default: null },
+    nextRetryAt: { type: Date, default: null },
     expiresAt: { type: Date },
     scheduledFor: { type: Date },
     metadata: { type: mongoose_1.Schema.Types.Mixed },
 }, { timestamps: true });
-// Indexes for fast lookup of active notifications per merchant
-NotificationSchema.index({ merchantId: 1, clearedAt: 1, createdAt: -1 });
-NotificationSchema.index({ merchantId: 1, readAt: 1, clearedAt: 1 });
+// ─── Indexes ─────────────────────────────────────────────────────────────────
+// Compound unique index ensuring at most 1 notification per (eventId, recipientUserId)
+NotificationSchema.index({ eventId: 1, recipientUserId: 1 }, { unique: true });
+// Compound indexes for high-throughput queries per user and merchant
+NotificationSchema.index({ recipientUserId: 1, createdAt: -1 });
+NotificationSchema.index({ recipientUserId: 1, notificationStatus: 1, readAt: 1, clearedAt: 1 });
+NotificationSchema.index({ recipientUserId: 1, dedupeKey: 1 });
+NotificationSchema.index({ merchantId: 1, createdAt: -1 });
 const Notification = mongoose_1.default.model('Notification', NotificationSchema);
 exports.default = Notification;

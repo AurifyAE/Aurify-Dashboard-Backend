@@ -160,7 +160,7 @@ const registerMerchant = async (req, res) => {
 exports.registerMerchant = registerMerchant;
 const approveMerchant = async (req, res) => {
     try {
-        const { merchantId } = req.params;
+        const merchantId = String(req.params.merchantId);
         const { status } = req.body;
         if (!['Pending', 'Active', 'Suspended'].includes(status)) {
             res.status(400).json({ success: false, message: 'Invalid merchant status' });
@@ -351,6 +351,10 @@ const updateProfile = async (req, res) => {
             },
         }, { new: true, upsert: true, runValidators: true });
         const updatedMerchant = await Merchant_1.default.findOne({ merchantId: merchant.merchantId });
+        const spotRateDoc = await SpotRate_1.default.findOne({ createdBy: merchant.userId }).lean();
+        const merchantData = updatedMerchant
+            ? { ...updatedMerchant.toObject(), commodities: spotRateDoc?.commodities || [] }
+            : null;
         const actor = {
             id: req.user?.id || 'system',
             name: merchant.companyName || 'User',
@@ -361,7 +365,13 @@ const updateProfile = async (req, res) => {
             actorName: actor.name,
             actor,
         });
-        res.status(200).json({ success: true, data: { merchant: updatedMerchant, profile } });
+        (0, eventBus_1.emitBusinessEvent)(eventBus_1.NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED, {
+            companyName: updatedMerchant?.companyName || merchant.companyName || 'Merchant',
+            actorName: actor.name,
+            actor,
+            metadata: { merchantId: merchant.merchantId },
+        });
+        res.status(200).json({ success: true, data: { merchant: merchantData, profile } });
     }
     catch (err) {
         console.error('updateProfile:', err);

@@ -1,8 +1,21 @@
 import { Router } from 'express';
-import { register, login, getMe, updateProfile, refreshToken, logout, logoutAll } from '../controllers/auth.controller';
+import {
+  register,
+  login,
+  getMe,
+  updateProfile,
+  refreshToken,
+  logout,
+  logoutAll,
+} from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 import { authLimiter, registerLimiter } from '../middlewares/rateLimiter.middleware';
-import { validate, loginSchema, registerSchema, updateProfileSchema } from '../middlewares/validation.middleware';
+import {
+  validate,
+  loginSchema,
+  registerSchema,
+  updateProfileSchema,
+} from '../middlewares/validation.middleware';
 
 const router = Router();
 

@@ -34,33 +34,20 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const AuditLogSchema = new mongoose_1.Schema({
-    userId: { type: String, index: true },
-    email: { type: String },
-    action: {
+const EventProcessingSchema = new mongoose_1.Schema({
+    eventId: { type: String, required: true, unique: true, index: true },
+    eventKey: { type: String, required: true },
+    status: {
         type: String,
-        required: true,
-        enum: [
-            'LOGIN',
-            'LOGOUT',
-            'LOGOUT_ALL',
-            'REGISTER',
-            'PASSWORD_CHANGE',
-            'PROFILE_UPDATE',
-            'ROLE_UPDATE',
-            'MERCHANT_APPROVAL',
-            'USER_SUSPENDED',
-            'USER_ACTIVATED',
-            'USER_DELETED',
-            'SETTINGS_UPDATE',
-            'NOTIFICATION_DISPATCHED',
-        ],
+        enum: ['PROCESSING', 'COMPLETED', 'FAILED'],
+        default: 'PROCESSING',
+        index: true,
     },
-    ipAddress: { type: String },
-    userAgent: { type: String },
-    metadata: { type: mongoose_1.Schema.Types.Mixed },
+    attempts: { type: Number, default: 1 },
+    error: { type: String },
+    processedAt: { type: Date, default: null },
 }, { timestamps: true });
-// ─── TTL: auto-delete after 1 year ───────────────────────────────────────────
-AuditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 365 });
-const AuditLog = mongoose_1.default.model('AuditLog', AuditLogSchema);
-exports.default = AuditLog;
+// Index for finding stale processing locks efficiently
+EventProcessingSchema.index({ status: 1, updatedAt: 1 });
+const EventProcessing = mongoose_1.default.model('EventProcessing', EventProcessingSchema);
+exports.default = EventProcessing;

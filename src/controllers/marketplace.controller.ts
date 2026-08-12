@@ -165,7 +165,7 @@ export const registerMerchant = async (req: AuthRequest, res: Response) => {
 
 export const approveMerchant = async (req: AuthRequest, res: Response) => {
   try {
-    const { merchantId } = req.params;
+    const merchantId = String(req.params.merchantId);
     const { status } = req.body;
     if (!['Pending', 'Active', 'Suspended'].includes(status)) {
       res.status(400).json({ success: false, message: 'Invalid merchant status' });
@@ -381,6 +381,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true, runValidators: true }
     );
     const updatedMerchant = await Merchant.findOne({ merchantId: merchant.merchantId });
+    const spotRateDoc = await SpotRate.findOne({ createdBy: merchant.userId }).lean();
+    const merchantData = updatedMerchant
+      ? { ...updatedMerchant.toObject(), commodities: spotRateDoc?.commodities || [] }
+      : null;
 
     const actor = {
       id: req.user?.id || 'system',
@@ -394,7 +398,14 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       actor,
     });
 
-    res.status(200).json({ success: true, data: { merchant: updatedMerchant, profile } });
+    emitBusinessEvent(NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED, {
+      companyName: updatedMerchant?.companyName || merchant.companyName || 'Merchant',
+      actorName: actor.name,
+      actor,
+      metadata: { merchantId: merchant.merchantId },
+    });
+
+    res.status(200).json({ success: true, data: { merchant: merchantData, profile } });
   } catch (err) {
     console.error('updateProfile:', err);
     res.status(500).json({ success: false, message: 'Failed to update profile' });

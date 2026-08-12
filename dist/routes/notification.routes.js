@@ -7,6 +7,7 @@ const router = (0, express_1.Router)();
 // Protect all notification routes
 router.use(auth_middleware_1.protect);
 router.get('/', notification_controller_1.getNotifications);
+router.get('/sync', notification_controller_1.syncNotifications);
 router.get('/unread-count', notification_controller_1.getUnreadCount);
 router.patch('/read-all', notification_controller_1.readAllNotifications);
 router.patch('/clear-all', notification_controller_1.clearAllNotifications);

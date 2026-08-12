@@ -2,19 +2,19 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import Notification from '../models/Notification';
 import Merchant from '../models/Merchant';
+import { getIoInstance } from '../sockets/socketService';
 
-const getMerchantId = async (req: AuthRequest): Promise<string | null> => {
-  if (!req.user?.id) return null;
-  const merchant = await Merchant.findOne({ userId: req.user.id }).lean();
-  return merchant ? merchant.merchantId : null;
+// Helper to resolve user ID safely from request
+const getUserId = (req: AuthRequest): string | null => {
+  return req.user?.id || null;
 };
 
 // GET /api/notifications?page=1&pageSize=20&category=APPROVAL&unread=true
 export const getNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
@@ -23,32 +23,27 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
     const category = req.query.category as string;
     const unreadOnly = req.query.unread === 'true';
 
-    // Auto-delete read notifications that are older than 90 days after being read
+    // Auto-delete read notifications that are older than 90 days
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
     await Notification.deleteMany({
-      merchantId,
+      recipientUserId: userId,
       readAt: { $ne: null, $lt: ninetyDaysAgo },
     });
 
     const filter: Record<string, any> = {
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       clearedAt: null,
       $or: [{ readAt: null }, { readAt: { $gte: ninetyDaysAgo } }],
     };
 
-    if (category) {
-      filter.category = category;
-    }
-
-    if (unreadOnly) {
-      filter.readAt = null;
-    }
+    if (category) filter.category = category;
+    if (unreadOnly) filter.readAt = null;
 
     const total = await Notification.countDocuments(filter);
-
-    // Calculate unread count specifically for active notifications
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
@@ -78,17 +73,84 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// GET /api/notifications/sync?cursor=<createdAt_id>
+export const syncNotifications = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const cursor = req.query.cursor as string | undefined;
+    let afterDate = new Date(0);
+
+    if (cursor) {
+      const parts = cursor.split('_');
+      const datePart = parts[0];
+      if (datePart && !isNaN(Date.parse(datePart))) {
+        afterDate = new Date(datePart);
+      }
+    }
+
+    // Delta notifications created after cursor
+    const deltaNotifications = await Notification.find({
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
+      clearedAt: null,
+      createdAt: { $gt: afterDate },
+    })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    // Authoritative unread count
+    const unread = await Notification.countDocuments({
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
+      readAt: null,
+      clearedAt: null,
+    });
+
+    // Authoritative active read notification IDs for state reconciliation
+    const activeReadDocs = await Notification.find({
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
+      readAt: { $ne: null },
+      clearedAt: null,
+    })
+      .select('_id')
+      .lean();
+
+    const activeReadIds = activeReadDocs.map((doc) => doc._id.toString());
+
+    res.status(200).json({
+      success: true,
+      data: {
+        deltaNotifications,
+        unread,
+        activeReadIds,
+        syncedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error('syncNotifications error:', err);
+    res.status(500).json({ success: false, message: 'Failed to sync notifications' });
+  }
+};
+
 // GET /api/notifications/unread-count
 export const getUnreadCount = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
@@ -103,15 +165,15 @@ export const getUnreadCount = async (req: AuthRequest, res: Response) => {
 // PATCH /api/notifications/:id/read
 export const markAsRead = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     const { id } = req.params;
     const notification = await Notification.findOneAndUpdate(
-      { _id: id, merchantId },
+      { _id: id, recipientUserId: userId },
       { $set: { readAt: new Date() } },
       { new: true }
     );
@@ -122,10 +184,21 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
     }
 
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'read',
+        notificationId: id,
+        unreadCount: unread,
+      });
+    }
 
     res.status(200).json({ success: true, data: { notification, unread } });
   } catch (err) {
@@ -137,16 +210,25 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
 // PATCH /api/notifications/read-all
 export const readAllNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     await Notification.updateMany(
-      { merchantId, readAt: null, clearedAt: null },
+      { recipientUserId: userId, notificationStatus: 'ACTIVE', readAt: null, clearedAt: null },
       { $set: { readAt: new Date() } }
     );
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'all-read',
+        unreadCount: 0,
+      });
+    }
 
     res.status(200).json({ success: true, data: { unread: 0 } });
   } catch (err) {
@@ -158,16 +240,16 @@ export const readAllNotifications = async (req: AuthRequest, res: Response) => {
 // PATCH /api/notifications/:id/clear
 export const clearNotification = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     const { id } = req.params;
     const notification = await Notification.findOneAndUpdate(
-      { _id: id, merchantId },
-      { $set: { clearedAt: new Date() } },
+      { _id: id, recipientUserId: userId },
+      { $set: { notificationStatus: 'CLEARED', clearedAt: new Date() } },
       { new: true }
     );
 
@@ -177,10 +259,21 @@ export const clearNotification = async (req: AuthRequest, res: Response) => {
     }
 
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'cleared',
+        notificationId: id,
+        unreadCount: unread,
+      });
+    }
 
     res.status(200).json({ success: true, data: { notification, unread } });
   } catch (err) {
@@ -192,18 +285,34 @@ export const clearNotification = async (req: AuthRequest, res: Response) => {
 // PATCH /api/notifications/clear-all-read
 export const clearAllReadNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     await Notification.updateMany(
-      { merchantId, readAt: { $ne: null }, clearedAt: null },
-      { $set: { clearedAt: new Date() } }
+      { recipientUserId: userId, notificationStatus: 'ACTIVE', readAt: { $ne: null }, clearedAt: null },
+      { $set: { notificationStatus: 'CLEARED', clearedAt: new Date() } }
     );
 
-    res.status(200).json({ success: true, message: 'Cleared all read notifications' });
+    const unread = await Notification.countDocuments({
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
+      readAt: null,
+      clearedAt: null,
+    });
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'cleared-read',
+        unreadCount: unread,
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'Cleared all read notifications', data: { unread } });
   } catch (err) {
     console.error('clearAllReadNotifications error:', err);
     res.status(500).json({ success: false, message: 'Failed to clear read notifications' });
@@ -213,16 +322,25 @@ export const clearAllReadNotifications = async (req: AuthRequest, res: Response)
 // PATCH /api/notifications/clear-all
 export const clearAllNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     await Notification.updateMany(
-      { merchantId, clearedAt: null },
-      { $set: { clearedAt: new Date() } }
+      { recipientUserId: userId, clearedAt: null },
+      { $set: { notificationStatus: 'CLEARED', clearedAt: new Date() } }
     );
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'all-cleared',
+        unreadCount: 0,
+      });
+    }
 
     res.status(200).json({ success: true, message: 'Cleared all notifications', data: { unread: 0 } });
   } catch (err) {
@@ -234,9 +352,9 @@ export const clearAllNotifications = async (req: AuthRequest, res: Response) => 
 // PATCH /api/notifications/clear-selected
 export const clearSelectedNotifications = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
@@ -247,15 +365,26 @@ export const clearSelectedNotifications = async (req: AuthRequest, res: Response
     }
 
     await Notification.updateMany(
-      { _id: { $in: ids }, merchantId },
-      { $set: { clearedAt: new Date() } }
+      { _id: { $in: ids }, recipientUserId: userId },
+      { $set: { notificationStatus: 'CLEARED', clearedAt: new Date() } }
     );
 
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'cleared-selected',
+        notificationIds: ids,
+        unreadCount: unread,
+      });
+    }
 
     res.status(200).json({ success: true, data: { unread } });
   } catch (err) {
@@ -267,14 +396,14 @@ export const clearSelectedNotifications = async (req: AuthRequest, res: Response
 // DELETE /api/notifications/:id
 export const deleteNotification = async (req: AuthRequest, res: Response) => {
   try {
-    const merchantId = await getMerchantId(req);
-    if (!merchantId) {
-      res.status(404).json({ success: false, message: 'Merchant not found' });
+    const userId = getUserId(req);
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
       return;
     }
 
     const { id } = req.params;
-    const notification = await Notification.findOneAndDelete({ _id: id, merchantId });
+    const notification = await Notification.findOneAndDelete({ _id: id, recipientUserId: userId });
 
     if (!notification) {
       res.status(404).json({ success: false, message: 'Notification not found' });
@@ -282,10 +411,21 @@ export const deleteNotification = async (req: AuthRequest, res: Response) => {
     }
 
     const unread = await Notification.countDocuments({
-      merchantId,
+      recipientUserId: userId,
+      notificationStatus: 'ACTIVE',
       readAt: null,
       clearedAt: null,
     });
+
+    // Multi-tab socket sync event
+    const io = getIoInstance();
+    if (io) {
+      io.to(`user:${userId}`).emit('notification:state-change', {
+        type: 'deleted',
+        notificationId: id,
+        unreadCount: unread,
+      });
+    }
 
     res.status(200).json({ success: true, data: { unread } });
   } catch (err) {

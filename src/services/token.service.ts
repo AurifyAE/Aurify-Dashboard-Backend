@@ -27,9 +27,8 @@ export const issueAccessToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, secret, { expiresIn: '15m' });
 };
 
-/** Issue a long-lived refresh token (7 days) as an opaque random value */
-export const issueRefreshToken = (): string =>
-  crypto.randomBytes(64).toString('hex');
+/** Issue a refresh token as an opaque random value */
+export const issueRefreshToken = (): string => crypto.randomBytes(64).toString('hex');
 
 // ─── Token Pair Generation & Session Persistence ─────────────────────────────
 
@@ -44,7 +43,7 @@ export const generateTokenPair = async (
   const accessToken = issueAccessToken(payload);
   const refreshToken = issueRefreshToken();
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
   await Session.create({
     userId: payload.id,
@@ -59,6 +58,19 @@ export const generateTokenPair = async (
 };
 
 // ─── Refresh Token Rotation ───────────────────────────────────────────────────
+
+/**
+ * Validates a refresh token and returns the associated userId.
+ */
+export const getUserIdFromRefreshToken = async (rawRefreshToken: string): Promise<string | null> => {
+  const hash = hashToken(rawRefreshToken);
+  const session = await Session.findOne({
+    refreshTokenHash: hash,
+    isRevoked: false,
+    expiresAt: { $gt: new Date() },
+  });
+  return session ? session.userId : null;
+};
 
 /**
  * Given a raw refresh token and the userId, validates the existing session,
@@ -84,22 +96,23 @@ export const rotateRefreshToken = async (
     throw new Error('Invalid or expired refresh token');
   }
 
-  // Revoke the old session (rotation — one-time use)
-  session.isRevoked = true;
+  // DO NOT revoke the old session to prevent multi-tab race conditions.
+  // Instead, update the lastUsed timestamp and slide the expiration window.
+  session.lastUsed = new Date();
+  session.expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // Sliding 1-hour window
   await session.save();
 
-  // Issue a fresh token pair
-  return generateTokenPair(payload, meta);
+  const accessToken = issueAccessToken(payload);
+
+  // Return the new access token but reuse the SAME refresh token
+  return { accessToken, refreshToken: rawRefreshToken };
 };
 
 // ─── Session Revocation ───────────────────────────────────────────────────────
 
 /** Revoke a single session by its refresh token hash */
 export const revokeSession = async (rawRefreshToken: string): Promise<void> => {
-  await Session.updateOne(
-    { refreshTokenHash: hashToken(rawRefreshToken) },
-    { isRevoked: true }
-  );
+  await Session.updateOne({ refreshTokenHash: hashToken(rawRefreshToken) }, { isRevoked: true });
 };
 
 /** Revoke all active sessions for a user (logout everywhere) */

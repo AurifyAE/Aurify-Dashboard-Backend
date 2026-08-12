@@ -1,13 +1,31 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export type DedupeStrategy = 'NONE' | 'ACTIVE_WINDOW' | 'REPLACE_ACTIVE' | 'GROUP';
+export type BroadcastScope = 'USER' | 'MERCHANT';
+export type NotificationLifecycleStatus = 'ACTIVE' | 'CLEARED';
+export type DeliveryTelemetryStatus = 'PERSISTED' | 'SOCKET_DELIVERED' | 'SOCKET_FAILED';
+
 export interface INotification extends Document {
+  recipientUserId: string;
   merchantId: string;
+  eventId: string;
+  dedupeKey: string;
+  dedupeStrategy: DedupeStrategy;
+  broadcastScope: BroadcastScope;
   title: string;
   message: string;
   type: 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR';
   priority: 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
   category: 'APPROVAL' | 'ADMIN' | 'SYSTEM' | 'FEATURE' | 'SECURITY' | 'BILLING' | 'WARNING';
-  sourceModule: 'MARKETPLACE' | 'SCREEN_BUILDER' | 'THEME' | 'BILLING' | 'ADMIN' | 'AUTH' | 'ANALYTICS';
+  sourceModule:
+    | 'MARKETPLACE'
+    | 'SCREEN_BUILDER'
+    | 'THEME'
+    | 'BILLING'
+    | 'ADMIN'
+    | 'AUTH'
+    | 'ANALYTICS'
+    | 'SYSTEM';
   version: number;
   silent: boolean;
   isPinned: boolean;
@@ -21,13 +39,20 @@ export interface INotification extends Document {
     label: string;
     url: string;
   }[];
-  delivery: {
-    dashboard: boolean;
+  channels: {
+    inApp: boolean;
+    socket: boolean;
     email: boolean;
-    push: boolean;
   };
+  notificationStatus: NotificationLifecycleStatus;
   readAt: Date | null;
   clearedAt: Date | null;
+  supersededAt?: Date | null;
+  supersededBy?: mongoose.Types.ObjectId | null;
+  deliveryStatus: DeliveryTelemetryStatus;
+  deliveryAttempts: number;
+  lastDeliveryAttemptAt?: Date | null;
+  nextRetryAt?: Date | null;
   expiresAt?: Date;
   scheduledFor?: Date;
   metadata?: Record<string, any>;
@@ -37,7 +62,20 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
   {
+    recipientUserId: { type: String, required: true, index: true },
     merchantId: { type: String, required: true, index: true },
+    eventId: { type: String, required: true },
+    dedupeKey: { type: String, required: true, index: true },
+    dedupeStrategy: {
+      type: String,
+      enum: ['NONE', 'ACTIVE_WINDOW', 'REPLACE_ACTIVE', 'GROUP'],
+      default: 'REPLACE_ACTIVE',
+    },
+    broadcastScope: {
+      type: String,
+      enum: ['USER', 'MERCHANT'],
+      default: 'USER',
+    },
     title: { type: String, required: true },
     message: { type: String, required: true },
     type: { type: String, enum: ['SUCCESS', 'INFO', 'WARNING', 'ERROR'], default: 'INFO' },
@@ -49,7 +87,16 @@ const NotificationSchema = new Schema<INotification>(
     },
     sourceModule: {
       type: String,
-      enum: ['MARKETPLACE', 'SCREEN_BUILDER', 'THEME', 'BILLING', 'ADMIN', 'AUTH', 'ANALYTICS'],
+      enum: [
+        'MARKETPLACE',
+        'SCREEN_BUILDER',
+        'THEME',
+        'BILLING',
+        'ADMIN',
+        'AUTH',
+        'ANALYTICS',
+        'SYSTEM',
+      ],
       required: true,
     },
     version: { type: Number, default: 1 },
@@ -67,13 +114,30 @@ const NotificationSchema = new Schema<INotification>(
         url: { type: String, required: true },
       },
     ],
-    delivery: {
-      dashboard: { type: Boolean, default: true },
+    channels: {
+      inApp: { type: Boolean, default: true },
+      socket: { type: Boolean, default: true },
       email: { type: Boolean, default: false },
-      push: { type: Boolean, default: false },
+    },
+    notificationStatus: {
+      type: String,
+      enum: ['ACTIVE', 'CLEARED'],
+      default: 'ACTIVE',
+      index: true,
     },
     readAt: { type: Date, default: null },
     clearedAt: { type: Date, default: null },
+    supersededAt: { type: Date, default: null },
+    supersededBy: { type: Schema.Types.ObjectId, ref: 'Notification', default: null },
+    deliveryStatus: {
+      type: String,
+      enum: ['PERSISTED', 'SOCKET_DELIVERED', 'SOCKET_FAILED'],
+      default: 'PERSISTED',
+      index: true,
+    },
+    deliveryAttempts: { type: Number, default: 0 },
+    lastDeliveryAttemptAt: { type: Date, default: null },
+    nextRetryAt: { type: Date, default: null },
     expiresAt: { type: Date },
     scheduledFor: { type: Date },
     metadata: { type: Schema.Types.Mixed },
@@ -81,9 +145,15 @@ const NotificationSchema = new Schema<INotification>(
   { timestamps: true }
 );
 
-// Indexes for fast lookup of active notifications per merchant
-NotificationSchema.index({ merchantId: 1, clearedAt: 1, createdAt: -1 });
-NotificationSchema.index({ merchantId: 1, readAt: 1, clearedAt: 1 });
+// ─── Indexes ─────────────────────────────────────────────────────────────────
+// Compound unique index ensuring at most 1 notification per (eventId, recipientUserId)
+NotificationSchema.index({ eventId: 1, recipientUserId: 1 }, { unique: true });
+
+// Compound indexes for high-throughput queries per user and merchant
+NotificationSchema.index({ recipientUserId: 1, createdAt: -1 });
+NotificationSchema.index({ recipientUserId: 1, notificationStatus: 1, readAt: 1, clearedAt: 1 });
+NotificationSchema.index({ recipientUserId: 1, dedupeKey: 1 });
+NotificationSchema.index({ merchantId: 1, createdAt: -1 });
 
 const Notification = mongoose.model<INotification>('Notification', NotificationSchema);
 export default Notification;

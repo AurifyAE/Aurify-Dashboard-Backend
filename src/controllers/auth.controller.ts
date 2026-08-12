@@ -17,8 +17,10 @@ import {
   revokeAllSessions,
   revokeSession,
   issueAccessToken,
+  getUserIdFromRefreshToken,
 } from '../services/token.service';
 import { logAudit, logSecurity } from '../services/audit.service';
+import { emitBusinessEvent, NotificationEvents } from '../helper/eventBus';
 
 const slugify = (value: string) =>
   value
@@ -170,7 +172,8 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       });
       res.status(403).json({
         success: false,
-        message: 'Account temporarily locked due to too many failed attempts. Try again in 15 minutes.',
+        message:
+          'Account temporarily locked due to too many failed attempts. Try again in 15 minutes.',
       });
       return;
     }
@@ -236,7 +239,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 // ─── REFRESH TOKEN ────────────────────────────────────────────────────────────
-export const refreshToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const rawRefresh = req.cookies?.aurify_refresh;
     if (!rawRefresh) {
@@ -244,17 +251,8 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    // Decode the current access token to get userId (may be expired — that's OK)
-    const jwtModule = await import('jsonwebtoken');
-    let userId: string;
-    try {
-      const payload = jwtModule.default.decode(
-        req.cookies?.aurify_token || ''
-      ) as { id?: string } | null;
-      userId = payload?.id || '';
-    } catch {
-      userId = '';
-    }
+    // Lookup the session securely using the refresh token (single source of truth)
+    const userId = await getUserIdFromRefreshToken(rawRefresh);
 
     if (!userId) {
       logSecurity('INVALID_JWT', { ipAddress: req.ip, path: req.path });
@@ -321,8 +319,18 @@ export const logout = async (req: Request, res: Response, next: NextFunction): P
       }
     }
     res
-      .clearCookie('aurify_token', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
-      .clearCookie('aurify_refresh', { path: '/', httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
+      .clearCookie('aurify_token', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
+      .clearCookie('aurify_refresh', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      })
       .clearCookie('aurify_token')
       .clearCookie('aurify_refresh')
       .status(200)
@@ -394,7 +402,9 @@ export const updateProfile = async (
 
     if (newPassword) {
       if (!currentPassword) {
-        res.status(400).json({ success: false, message: 'Current password is required to set a new password' });
+        res
+          .status(400)
+          .json({ success: false, message: 'Current password is required to set a new password' });
         return;
       }
       const isMatch = await user.comparePassword(currentPassword);
@@ -438,6 +448,17 @@ export const updateProfile = async (
       userId: user._id.toString(),
       email: user.email,
       ipAddress: req.ip,
+    });
+
+    emitBusinessEvent(NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED, {
+      companyName: user.companyName || 'Merchant',
+      actorName: user.companyName || 'User',
+      actor: {
+        id: user._id.toString(),
+        name: user.companyName || 'User',
+        type: 'user',
+      },
+      metadata: { userId: user._id.toString() },
     });
 
     // Re-issue fresh access token

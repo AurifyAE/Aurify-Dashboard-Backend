@@ -6,6 +6,7 @@ export const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => (req.headers['x-forwarded-for'] as string) || req.ip || '127.0.0.1',
   message: {
     success: false,
     message: 'Too many authentication attempts. Please try again in 15 minutes.',

@@ -9,8 +9,8 @@ import Joi from 'joi';
 export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req.body, {
-      abortEarly: false,    // collect all errors, not just the first
-      stripUnknown: true,   // remove fields not in schema (prevent mass-assign)
+      abortEarly: false, // collect all errors, not just the first
+      stripUnknown: true, // remove fields not in schema (prevent mass-assign)
     });
 
     if (error) {

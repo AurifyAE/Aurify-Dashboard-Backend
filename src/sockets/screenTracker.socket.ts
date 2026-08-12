@@ -29,6 +29,18 @@ export const setupScreenTracker = (io: Server) => {
   });
 
   io.on('connection', (socket: Socket) => {
+    // ── Join User-Specific Notification Room ──
+    socket.on('join-user-notifications', async () => {
+      if (!socket.data.userId) {
+        socket.emit('error', { message: 'Authentication required' });
+        return;
+      }
+      const userRoom = `user:${socket.data.userId}`;
+      await socket.join(userRoom);
+      console.log(`🔐 Socket ${socket.id} securely joined user room ${userRoom}`);
+    });
+
+    // ── Join Merchant Notification Room ──
     socket.on('join-merchant-notifications', async ({ merchantId }: { merchantId: string }) => {
       if (!socket.data.userId) {
         socket.emit('error', { message: 'Authentication required' });
@@ -48,6 +60,7 @@ export const setupScreenTracker = (io: Server) => {
         console.error('join-merchant-notifications error:', err);
       }
     });
+
     socket.on(
       'join-screen',
       async ({ merchantId, screenSlug }: { merchantId: string; screenSlug: string }) => {
@@ -61,16 +74,14 @@ export const setupScreenTracker = (io: Server) => {
           const currentViewers = activeViewers.get(merchantId) || new Set<string>();
 
           if (currentViewers.size >= maxDevices) {
-            // Reject connection for this screen due to device limit
             socket.emit('device-limit-reached', { maxDevices });
             return;
           }
 
-          // Add socket to active viewers
           currentViewers.add(socket.id);
           activeViewers.set(merchantId, currentViewers);
 
-          socket.data.merchantId = merchantId; // save to socket for disconnect event
+          socket.data.merchantId = merchantId;
           socket.emit('screen-joined', { success: true });
         } catch (err) {
           console.error('join-screen error:', err);
