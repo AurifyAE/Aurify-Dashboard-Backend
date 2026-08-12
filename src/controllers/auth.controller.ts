@@ -17,6 +17,7 @@ import {
   revokeAllSessions,
   revokeSession,
   issueAccessToken,
+  getUserIdFromRefreshToken,
 } from '../services/token.service';
 import { logAudit, logSecurity } from '../services/audit.service';
 import { emitBusinessEvent, NotificationEvents } from '../helper/eventBus';
@@ -250,17 +251,8 @@ export const refreshToken = async (
       return;
     }
 
-    // Decode the current access token to get userId (may be expired — that's OK)
-    const jwtModule = await import('jsonwebtoken');
-    let userId: string;
-    try {
-      const payload = jwtModule.default.decode(req.cookies?.aurify_token || '') as {
-        id?: string;
-      } | null;
-      userId = payload?.id || '';
-    } catch {
-      userId = '';
-    }
+    // Lookup the session securely using the refresh token (single source of truth)
+    const userId = await getUserIdFromRefreshToken(rawRefresh);
 
     if (!userId) {
       logSecurity('INVALID_JWT', { ipAddress: req.ip, path: req.path });

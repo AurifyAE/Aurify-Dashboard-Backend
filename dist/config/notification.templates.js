@@ -6,7 +6,7 @@ exports.NotificationTemplates = {
     // --- Marketplace & Merchant Approval Events ---
     [eventBus_1.NotificationEvents.MERCHANT_APPROVED]: (payload) => ({
         title: 'Merchant Account Approved',
-        message: `Your merchant account has been approved by admin ${payload.actorName}. Welcome to Aurify!`,
+        message: `Your merchant account has been approved by admin ${payload.actorName || payload.actor?.name || 'Admin'}. Welcome to Aurify!`,
         type: 'SUCCESS',
         category: 'APPROVAL',
         sourceModule: 'MARKETPLACE',
@@ -16,7 +16,7 @@ exports.NotificationTemplates = {
     }),
     [eventBus_1.NotificationEvents.MERCHANT_REJECTED]: (payload) => ({
         title: 'Merchant Registration Rejected',
-        message: `Your merchant account request was rejected by admin ${payload.actorName}. Please update details or contact support.`,
+        message: `Your merchant account request was rejected by admin ${payload.actorName || payload.actor?.name || 'Admin'}. Please update details or contact support.`,
         type: 'ERROR',
         category: 'APPROVAL',
         sourceModule: 'MARKETPLACE',
@@ -26,7 +26,7 @@ exports.NotificationTemplates = {
     }),
     [eventBus_1.NotificationEvents.SUBSCRIPTION_UPDATED]: (payload) => ({
         title: 'Subscription Updated',
-        message: `Your subscription was updated by admin ${payload.actorName}${payload.planName ? ` to plan "${payload.planName}"` : ''}.`,
+        message: `Your subscription was updated by admin ${payload.actorName || payload.actor?.name || 'Admin'}${payload.planName ? ` to plan "${payload.planName}"` : ''}.`,
         type: 'SUCCESS',
         category: 'BILLING',
         sourceModule: 'BILLING',
@@ -36,7 +36,7 @@ exports.NotificationTemplates = {
     // --- Limits Management ---
     [eventBus_1.NotificationEvents.LIMITS_UPDATED]: (payload) => ({
         title: 'Limits Updated By Admin',
-        message: `Admin ${payload.actorName} changed your account limits: Max Screens set to ${payload.maxScreens}, Max Devices set to ${payload.maxDevices}.`,
+        message: `Admin ${payload.actorName || payload.actor?.name || 'Admin'} changed your account limits: Max Screens set to ${payload.maxScreens || 1}, Max Devices set to ${payload.maxDevices || 1}.`,
         type: 'INFO',
         category: 'ADMIN',
         sourceModule: 'ADMIN',
@@ -46,7 +46,7 @@ exports.NotificationTemplates = {
     // --- Layout Publishing ---
     [eventBus_1.NotificationEvents.LAYOUT_PUBLISHED]: (payload) => ({
         title: 'Screen Layout Published',
-        message: `Layout "${payload.layoutName}" has been successfully published to screens by ${payload.actorName}.`,
+        message: `Layout "${payload.layoutName || 'Screen'}" has been successfully published to screens by ${payload.actorName || payload.actor?.name || 'User'}.`,
         type: 'SUCCESS',
         category: 'SYSTEM',
         sourceModule: 'SCREEN_BUILDER',
@@ -55,7 +55,7 @@ exports.NotificationTemplates = {
     }),
     [eventBus_1.NotificationEvents.LAYOUT_UNPUBLISHED]: (payload) => ({
         title: 'Layout Unpublished',
-        message: `Layout "${payload.layoutName}" was unpublished by ${payload.actorName}.`,
+        message: `Layout "${payload.layoutName || 'Screen'}" was unpublished by ${payload.actorName || payload.actor?.name || 'User'}.`,
         type: 'WARNING',
         category: 'SYSTEM',
         sourceModule: 'SCREEN_BUILDER',
@@ -65,7 +65,7 @@ exports.NotificationTemplates = {
     // --- Spot Rate Commodities ---
     [eventBus_1.NotificationEvents.COMMODITY_CONFIG_CHANGED]: (payload) => ({
         title: 'Commodity Config Changed',
-        message: `Your allowed commodities configuration was updated by admin ${payload.actorName}.`,
+        message: `Your allowed commodities configuration was updated by admin ${payload.actorName || payload.actor?.name || 'Admin'}.`,
         type: 'INFO',
         category: 'ADMIN',
         sourceModule: 'ADMIN',
@@ -75,7 +75,7 @@ exports.NotificationTemplates = {
     // --- Profile & Authentication ---
     [eventBus_1.NotificationEvents.PASSWORD_CHANGED]: (payload) => ({
         title: 'Password Changed Successfully',
-        message: `The password for your account was changed by admin ${payload.actorName}.`,
+        message: `The password for your account was changed by ${payload.actorName || payload.actor?.name || 'User'}.`,
         type: 'WARNING',
         category: 'SECURITY',
         sourceModule: 'AUTH',
@@ -84,11 +84,22 @@ exports.NotificationTemplates = {
     }),
     [eventBus_1.NotificationEvents.PROFILE_UPDATED]: (payload) => ({
         title: 'Profile Updated',
-        message: `Your company profile was updated by admin ${payload.actorName}.`,
+        message: payload.actorName || payload.actor?.name
+            ? `Your company profile was updated by ${payload.actorName || payload.actor?.name}.`
+            : 'Your company profile was updated successfully.',
         type: 'INFO',
         category: 'ADMIN',
         sourceModule: 'ADMIN',
         iconKey: 'user-check',
         actions: [{ label: 'Review Changes', url: '/dashboard/merchant-profile' }],
+    }),
+    [eventBus_1.NotificationEvents.ADMIN_MERCHANT_PROFILE_UPDATED]: (payload) => ({
+        title: 'Merchant Profile Updated',
+        message: `Merchant "${payload.companyName || 'Merchant'}" updated their company profile details.`,
+        type: 'INFO',
+        category: 'ADMIN',
+        sourceModule: 'ADMIN',
+        iconKey: 'user-check',
+        actions: [{ label: 'View Merchants', url: '/admin' }],
     }),
 };

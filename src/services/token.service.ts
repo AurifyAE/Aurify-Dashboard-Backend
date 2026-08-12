@@ -60,6 +60,19 @@ export const generateTokenPair = async (
 // ─── Refresh Token Rotation ───────────────────────────────────────────────────
 
 /**
+ * Validates a refresh token and returns the associated userId.
+ */
+export const getUserIdFromRefreshToken = async (rawRefreshToken: string): Promise<string | null> => {
+  const hash = hashToken(rawRefreshToken);
+  const session = await Session.findOne({
+    refreshTokenHash: hash,
+    isRevoked: false,
+    expiresAt: { $gt: new Date() },
+  });
+  return session ? session.userId : null;
+};
+
+/**
  * Given a raw refresh token and the userId, validates the existing session,
  * revokes it, creates a new session, and returns a fresh token pair.
  * Throws if the session is invalid, expired, or revoked.

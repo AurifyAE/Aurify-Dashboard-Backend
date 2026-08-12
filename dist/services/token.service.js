@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.listActiveSessions = exports.revokeAllSessions = exports.revokeSession = exports.rotateRefreshToken = exports.generateTokenPair = exports.issueRefreshToken = exports.issueAccessToken = void 0;
+exports.listActiveSessions = exports.revokeAllSessions = exports.revokeSession = exports.rotateRefreshToken = exports.getUserIdFromRefreshToken = exports.generateTokenPair = exports.issueRefreshToken = exports.issueAccessToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const Session_1 = __importDefault(require("../models/Session"));
@@ -40,6 +40,19 @@ const generateTokenPair = async (payload, meta) => {
 };
 exports.generateTokenPair = generateTokenPair;
 // ─── Refresh Token Rotation ───────────────────────────────────────────────────
+/**
+ * Validates a refresh token and returns the associated userId.
+ */
+const getUserIdFromRefreshToken = async (rawRefreshToken) => {
+    const hash = hashToken(rawRefreshToken);
+    const session = await Session_1.default.findOne({
+        refreshTokenHash: hash,
+        isRevoked: false,
+        expiresAt: { $gt: new Date() },
+    });
+    return session ? session.userId : null;
+};
+exports.getUserIdFromRefreshToken = getUserIdFromRefreshToken;
 /**
  * Given a raw refresh token and the userId, validates the existing session,
  * revokes it, creates a new session, and returns a fresh token pair.
