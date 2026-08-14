@@ -16,7 +16,7 @@ const issueAccessToken = (payload) => {
     return jsonwebtoken_1.default.sign(payload, secret, { expiresIn: '15m' });
 };
 exports.issueAccessToken = issueAccessToken;
-/** Issue a long-lived refresh token (7 days) as an opaque random value */
+/** Issue a refresh token as an opaque random value */
 const issueRefreshToken = () => crypto_1.default.randomBytes(64).toString('hex');
 exports.issueRefreshToken = issueRefreshToken;
 // ─── Token Pair Generation & Session Persistence ─────────────────────────────
@@ -27,7 +27,7 @@ exports.issueRefreshToken = issueRefreshToken;
 const generateTokenPair = async (payload, meta) => {
     const accessToken = (0, exports.issueAccessToken)(payload);
     const refreshToken = (0, exports.issueRefreshToken)();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
     await Session_1.default.create({
         userId: payload.id,
         refreshTokenHash: hashToken(refreshToken),
@@ -69,11 +69,14 @@ const rotateRefreshToken = async (rawRefreshToken, userId, payload, meta) => {
     if (!session) {
         throw new Error('Invalid or expired refresh token');
     }
-    // Revoke the old session (rotation — one-time use)
-    session.isRevoked = true;
+    // DO NOT revoke the old session to prevent multi-tab race conditions.
+    // Instead, update the lastUsed timestamp and slide the expiration window.
+    session.lastUsed = new Date();
+    session.expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // Sliding 1-hour window
     await session.save();
-    // Issue a fresh token pair
-    return (0, exports.generateTokenPair)(payload, meta);
+    const accessToken = (0, exports.issueAccessToken)(payload);
+    // Return the new access token but reuse the SAME refresh token
+    return { accessToken, refreshToken: rawRefreshToken };
 };
 exports.rotateRefreshToken = rotateRefreshToken;
 // ─── Session Revocation ───────────────────────────────────────────────────────
